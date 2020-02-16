@@ -25,7 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='lyth',
-    version='0.0.2',
+    version='0.0.3',
     license='BSD-2-Clause',
     description='A (monolithic) compiled language',
     long_description='%s\n%s' % (
