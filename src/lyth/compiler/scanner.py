@@ -47,7 +47,7 @@ class Scanner:
         """
         Return the line of source code being scanned.
         """
-        return self._raw[max(0, line - 1)]
+        return self._raw[line]
 
     def __iter__(self):
         """
@@ -77,6 +77,9 @@ class Scanner:
         Returns the character being scanned in the corresponding line or source
         code.
         """
+        if self.line >= len(self._raw):
+            return f"{self!s}:\n\tEOF"
+
         return f"{self!s}:\n\t{self[self.line]}\n\t{' '* self.column }^"
 
     def __str__(self):

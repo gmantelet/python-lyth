@@ -13,4 +13,5 @@ import sys
 from lyth.cli import main
 
 if __name__ == "__main__":
+    # You are outside of coverage. Do not put code here.
     sys.exit(main())
