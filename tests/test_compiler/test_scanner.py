@@ -1,4 +1,5 @@
 import pytest
+
 from lyth.compiler.scanner import Scanner
 
 
@@ -54,5 +55,4 @@ def test_scanner_getitem():
     assert scanner[0] == 'let:'
     assert scanner[1] == '  a := 1 + 2'
     assert scanner[2] == ''
-    with pytest.raises(IndexError):
-        a = scanner[3]
+    assert scanner[3] == 'EOF'

@@ -47,6 +47,9 @@ class Scanner:
         """
         Return the line of source code being scanned.
         """
+        if line >= len(self._raw):
+            return "EOF"
+
         return self._raw[line]
 
     def __iter__(self):
