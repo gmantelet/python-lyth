@@ -1,56 +1,38 @@
 """
 This module contains the text scanner.
 
-The Scanner is nothing more than an iterator over a string, returning the
-current character being read, and providing ancillary functions such as keeping
-track of line and column numbers when it becomes important to raise an
-Exception.
+The Scanner is an iterator over a string, reading characters one by one so that
+the Lexer can provide tokens.
 """
 
 
 class Scanner:
     """
-    The scanner for the Lexer.
+    The scanner for the lexer.
 
-    An input text is iterated over, providing characters on demand to the
-    lexer. The scanner could provide a couple of ancillary functions, and could
-    also acts as a linter in future versions of this tool, warning the user
-    about syntax errors.
-
-    Attributes:
-        _line  (iterable): Current line to scan characters for.
-        _raw   (list)    : The source code, line by line.
-        _text  (iterable): An iterator on the lines of the source code.
-        column (integer) : The position of the caret in the line of code.
-        line   (integer) : The line of code being scanned.
+    This is a subcomponent of the lexer. In general a scanner returns tokens,
+    this one however returns chars one by one, and provides ancillary methods,
+    such as keeping track of lines for debug purposes in case an exception is
+    raised.
     """
-    def __init__(self, text):
+    def __init__(self):
+        self._line = None
+        self.lineno = 0
+        self.offset = -1  # A clue that the read line is empty.
+        self.raw = None
+        self.text = None
+
+    def __call__(self, text):
         """
-        Instantiates a new scanner.
-
-        The scanner is instantiated and starts fetching the source code
-        provided.
-
-        Parameters:
-            text: The source code to scan
-
-        Raises:
-            StopIteration: If the source code is empty.
+        Calling the scanner makes it work on the piece of source code provided
+        as parameter. It makes it available as iterable over the source code.
         """
-        self._raw = text.replace('\r', '').split('\n')
-        self._text = iter(self._raw)
-        self._line = iter(next(self._text))
-        self.column = -1  # Voluntarily placing the caret at -1.
-        self.line = 0
+        self.raw = text.replace('\r', '').split('\n')
+        self.text = iter(self.raw)
+        self._line = iter(next(self.text))
 
-    def __getitem__(self, line):
-        """
-        Return the line of source code being scanned.
-        """
-        if line >= len(self._raw):
-            return "EOF"
-
-        return self._raw[line]
+        self.lineno = 0
+        self.offset = -1
 
     def __iter__(self):
         """
@@ -61,18 +43,24 @@ class Scanner:
     def __next__(self):
         """
         Retrieve the next character in source code.
+
+        It fetches the next character in line, and if the line is complete,
+        then it jumps to next line.
         """
         try:
-            self.column += 1
-            return next(self._line)
+            char = next(self._line)
 
         except StopIteration:
-            self.column = -1
-            self.line += 1
+            self.offset = -1
+
+        else:
+            self.offset += 1
+            return char
 
         # If the end of the source code is reached, the StopIteration exception
         # is propagated to the lexer.
-        self._line = iter(next(self._text))
+        self._line = iter(next(self.text))
+        self.lineno += 1
         return next(self)
 
     def __repr__(self):
@@ -80,13 +68,22 @@ class Scanner:
         Returns the character being scanned in the corresponding line or source
         code.
         """
-        if self.line >= len(self._raw):
-            return f"{self!s}:\n\tEOF"
-
-        return f"{self!s}:\n\t{self[self.line]}\n\t{' '* self.column }^"
+        return f"{self!s}:\n\t{self.raw[self.lineno]}\n\t{' '* self.offset }^"
 
     def __str__(self):
         """
         Returns the current position of the character being scanned.
         """
-        return f"in line {self.line} column {self.column}"
+        return f"in line {self.lineno} column {self.offset}"
+
+    @property
+    def line(self):
+        """
+        The current line being scanned.
+
+        This is a convenient property to let the user access the current line
+        being parsed. _line attribute is an iterator and needs tweaks to be
+        displayed properly while doing str(). The user may also use directly
+        self.raw[self.lineno].
+        """
+        return self.raw[self.lineno]
