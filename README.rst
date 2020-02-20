@@ -12,7 +12,7 @@ Overview
     * - tests
       - | |travis| |requires|
         | |coveralls| |codecov|
-        | |landscape|
+        | |scrutinize|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
@@ -36,8 +36,8 @@ Overview
     :alt: Coverage Status
     :target: https://codecov.io/github/gmantelet/python-lyth
 
-.. |landscape| image:: https://landscape.io/github/gmantelet/python-lyth/master/landscape.svg?style=flat
-    :target: https://landscape.io/github/gmantelet/python-lyth/master
+.. |scrutinize| image:: https://scrutinizer-ci.com/g/gmantelet/python-lyth/badges/quality-score.png?b=master
+    :target: https://scrutinizer-ci.com/g/gmantelet/python-lyth/
     :alt: Code Quality Status
 
 .. |version| image:: https://img.shields.io/pypi/v/lyth.svg
