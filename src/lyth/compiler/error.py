@@ -23,10 +23,12 @@ class LythSyntaxError(Exception):
     The SyntaxError with an alias linking it to the lyth code, not the python
     execution itself.
     """
-    def __init__(self, filename, lineno, offset, line, msg=LythError.SYNTAX_ERROR):
-        super().__init__(f"{msg.value} at '{filename}', line {lineno}:\n\t{line}\n\t{' ' * offset}^")
-        self.filename = filename
-        self.lineno = lineno
-        self.offset = offset
-        self.line = line
+    def __init__(self, info, msg=LythError.SYNTAX_ERROR):
+        super().__init__(f"{msg.value} at '{info.filename}', line {info.lineno}:\n\t"
+                         f"{info.line}\n\t{' ' * info.offset}^")
+
+        self.filename = info.filename
+        self.lineno = info.lineno
+        self.offset = info.offset
+        self.line = info.line
         self.msg = msg

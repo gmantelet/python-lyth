@@ -24,49 +24,49 @@ def test_lexer():
 
     token = next(lexer)
 
-    assert token.column == 0
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 0
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == 1
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.text == "1 + 2"
+    assert token.info.line == "1 + 2"
 
     token = next(lexer)
 
-    assert token.column == 2
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 2
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == '+'
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Symbol.ADD
-    assert token.text == "1 + 2"
+    assert token.info.line == "1 + 2"
 
     token = next(lexer)
 
-    assert token.column == 4
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 4
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == 2
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.text == "1 + 2"
+    assert token.info.line == "1 + 2"
 
     token = next(lexer)
 
-    assert token.column == -1
-    assert token.filename == "<stdin>"
+    assert token.info.offset == -1
+    assert token.info.filename == "<stdin>"
     assert token.lexeme is None
-    assert token.lineno == 1
+    assert token.info.lineno == 1
     assert token.symbol == Symbol.EOF
-    assert token.text == ""
+    assert token.info.line == ""
 
     with pytest.raises(StopIteration):
         token = next(lexer)
 
-    assert token.column == -1
-    assert token.filename == "<stdin>"
+    assert token.info.offset == -1
+    assert token.info.filename == "<stdin>"
     assert token.lexeme is None
-    assert token.lineno == 1
+    assert token.info.lineno == 1
     assert token.symbol == Symbol.EOF
-    assert token.text == ""
+    assert token.info.line == ""
 
 
 def test_missing_empty_line():
@@ -96,49 +96,49 @@ def test_multiple_spaces():
 
     token = next(lexer)
 
-    assert token.column == 0
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 0
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == 1
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.text == "1  +=  2  "
+    assert token.info.line == "1  +=  2  "
 
     token = next(lexer)
 
-    assert token.column == 3
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 3
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == '+='
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Symbol.ADDAUG
-    assert token.text == "1  +=  2  "
+    assert token.info.line == "1  +=  2  "
 
     token = next(lexer)
 
-    assert token.column == 7
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 7
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == 2
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.text == "1  +=  2  "
+    assert token.info.line == "1  +=  2  "
 
     token = next(lexer)
 
-    assert token.column == -1
-    assert token.filename == "<stdin>"
+    assert token.info.offset == -1
+    assert token.info.filename == "<stdin>"
     assert token.lexeme is None
-    assert token.lineno == 1
+    assert token.info.lineno == 1
     assert token.symbol == Symbol.EOF
-    assert token.text == ""
+    assert token.info.line == ""
 
     with pytest.raises(StopIteration):
         token = next(lexer)
 
-    assert token.column == -1
-    assert token.filename == "<stdin>"
+    assert token.info.offset == -1
+    assert token.info.filename == "<stdin>"
     assert token.lexeme is None
-    assert token.lineno == 1
+    assert token.info.lineno == 1
     assert token.symbol == Symbol.EOF
-    assert token.text == ""
+    assert token.info.line == ""
 
 
 def test_missing_space_before_operator():
@@ -172,41 +172,41 @@ def test_missing_space_after_operator():
 
     token = next(lexer)
 
-    assert token.column == 0
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 0
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == 1
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.text == "1  +2  "
+    assert token.info.line == "1  +2  "
 
     token = next(lexer)
 
-    assert token.column == 3
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 3
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == '+'
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Symbol.ADD
-    assert token.text == "1  +2  "
+    assert token.info.line == "1  +2  "
 
     token = next(lexer)
 
-    assert token.column == 4
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 4
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == 2
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.text == "1  +2  "
+    assert token.info.line == "1  +2  "
 
     lexer("1  +=2  \n")
 
     token = next(lexer)
 
-    assert token.column == 0
-    assert token.filename == "<stdin>"
+    assert token.info.offset == 0
+    assert token.info.filename == "<stdin>"
     assert token.lexeme == 1
-    assert token.lineno == 0
+    assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.text == "1  +=2  "
+    assert token.info.line == "1  +=2  "
 
     with pytest.raises(LythSyntaxError) as err:
         token = next(lexer)

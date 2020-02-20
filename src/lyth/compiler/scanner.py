@@ -17,12 +17,13 @@ class Scanner:
     """
     def __init__(self):
         self._line = None
+        self.filename = None
         self.lineno = 0
         self.offset = -1  # A clue that the read line is empty.
         self.raw = None
         self.text = None
 
-    def __call__(self, text):
+    def __call__(self, text, source="<stdin>"):
         """
         Calling the scanner makes it work on the piece of source code provided
         as parameter. It makes it available as iterable over the source code.
@@ -33,6 +34,7 @@ class Scanner:
 
         self.lineno = 0
         self.offset = -1
+        self.filename = source
 
     def __iter__(self):
         """

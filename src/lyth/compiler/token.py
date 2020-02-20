@@ -107,6 +107,18 @@ class Literal(_Lexeme):
     VALUE = 'value'            # A numeral value.
 
 
+class TokenInfo:
+    """
+    A unit of data capturing a snapshot of the scanner metadata when a Token
+    object is instantiated.
+    """
+    def __init__(self, filename, lineno, offset, line):
+        self.filename = filename
+        self.lineno = lineno
+        self.offset = offset
+        self.line = line
+
+
 class Token:
     """
     Defines a sequence of characters hopefully carrying some meaning.
@@ -117,7 +129,7 @@ class Token:
     processing may be required, for instance converting the string lexeme into
     an int etc.
     """
-    def __init__(self, lexeme, filename, lineno, column, text):
+    def __init__(self, lexeme, scan):
         """
         Instantiate a new Token.
 
@@ -138,13 +150,10 @@ class Token:
             self.symbol = Literal.VALUE
 
         else:
-            raise LythSyntaxError(filename, lineno, column, text, msg=LythError.INVALID_CHARACTER)
+            raise LythSyntaxError(scan, msg=LythError.INVALID_CHARACTER)
 
-        self.filename = filename
+        self.info = TokenInfo(scan.filename, scan.lineno, scan.offset, scan.line)
         self.lexeme = lexeme
-        self.lineno = lineno
-        self.column = column
-        self.text = text
 
     def __call__(self):
         """
@@ -178,8 +187,7 @@ class Token:
         #    For example: '5+' or '5=' etc.
         #
         if symbol is not None and self.symbol in Literal:
-            raise LythSyntaxError(self.filename, self.lineno, self.column, self.text,
-                                  msg=LythError.MISSING_SPACE_BEFORE_OPERATOR)
+            raise LythSyntaxError(self.info, msg=LythError.MISSING_SPACE_BEFORE_OPERATOR)
 
         #
         # 3. Continuing a literal
@@ -196,13 +204,12 @@ class Token:
         #    NOTE: A syntax error is raised, but the scanner may decide to
         #          create a new token instead '+5' is valid, '=5' is not.
         if lexeme.isdigit() and self.symbol in Symbol:
-            raise LythSyntaxError(self.filename, self.lineno, self.column, self.text,
-                                  msg=LythError.MISSING_SPACE_AFTER_OPERATOR)
+            raise LythSyntaxError(self.info, msg=LythError.MISSING_SPACE_AFTER_OPERATOR)
 
-        raise LythSyntaxError(self.filename, self.lineno, self.column, self.text, msg=LythError.SYNTAX_ERROR)
+        raise LythSyntaxError(self.info, msg=LythError.SYNTAX_ERROR)
 
     def __repr__(self):
-        return f"Token({self.symbol.name}, {self.lexeme}, {self.lineno}, {self.column})"
+        return f"Token({self.symbol.name}, {self.lexeme}, {self.info.lineno}, {self.info.offset})"
 
     def __str__(self):
         return f"{self.symbol.name}: {self.lexeme}"

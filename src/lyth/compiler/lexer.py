@@ -24,7 +24,6 @@ class Lexer:
             scanner (Scanner): An instance of a scanner.
         """
         self.current_token = None
-        self.filename = None
         self.scan = scanner
 
     def __call__(self, text, source="<stdin>"):
@@ -35,8 +34,7 @@ class Lexer:
         source code character by character. It makes the lexer an iterable,
         ready to call next upon.
         """
-        self.filename = source
-        self.scan(text)
+        self.scan(text, source)
 
     def __iter__(self):
         """
@@ -81,7 +79,7 @@ class Lexer:
             #    next character.
             #
             elif self.current_token is None:
-                self.current_token = Token(char, self.filename, self.scan.lineno, self.scan.offset, self.scan.line)
+                self.current_token = Token(char, self.scan)
                 return next(self)
 
             #
@@ -97,40 +95,8 @@ class Lexer:
                 self.current_token += char
                 return next(self)
 
-        #
-        # 5. The scanner is depleted. We reached end of source code.
-        #
         except StopIteration:
-
-            #
-            # 5.1. The lexer checks that last line on the scanner was an empty
-            #      line. If not, raise an exception.
-            if self.scan.line:
-                raise LythSyntaxError(self.filename, self.scan.lineno, self.scan.offset, self.scan.line,
-                                      msg=LythError.MISSING_EMPTY_LINE) from None
-
-            #
-            # 5.2. There is no current token being processed. We are ready to
-            #      return an End Of File token.
-            if self.current_token is None:
-                token = Token(None, self.filename, self.scan.lineno, self.scan.offset, self.scan.line)
-                self.current_token = token
-                return token()
-
-            #
-            # 5.3. The current token is an end of file. Propagate the exception
-            #      Or we may have infinite while loops.
-            elif self.current_token.symbol is Symbol.EOF:
-                raise
-
-            #
-            # 5.4. There was a token being concatenated. We need to return it
-            #      before we send an End Of File token.
-            #
-            else:
-                token = self.current_token
-                self.current_token = None
-                return token()
+            return self.handle_eof()
 
         #
         # 6. We tried to concatenate a token, but there was a LythSyntaxError raised.
@@ -144,10 +110,41 @@ class Lexer:
             #      operator. The Parser would raise such an error at its stage.
             if lyth_error.msg is LythError.MISSING_SPACE_AFTER_OPERATOR:
                 if token is not None and token.symbol in (Symbol.ADD, Symbol.SUB):
-                    self.current_token = Token(char, self.filename, self.scan.lineno, self.scan.offset, self.scan.line)
+                    self.current_token = Token(char, self.scan)
                     return token()
 
             #
             # 6.2. In any other LythSyntaxError, the exception is propagated.
             #
             raise
+
+    def handle_eof(self):
+        """
+        The scanner is depleted. We reached end of source code.
+
+        At that point, we have four options:
+        1. The last line checked on the scanner was an empty line. If not we
+           raise an exception.
+        2. There is no current token being processed, we are ready to return an
+           End Of File token.
+        3. The current token is an end of file, we need to propagate the
+           StopIteration exception from the scanner to avoid infinite loops on
+           objects using this instance as iterator.
+        4. There was a token being processed. We need to return it before we
+           send an End Of File token.
+        """
+        if self.scan.line:
+            raise LythSyntaxError(self.scan, msg=LythError.MISSING_EMPTY_LINE) from None
+
+        if self.current_token is None:
+            token = Token(None, self.scan)
+            self.current_token = token
+            return token()
+
+        elif self.current_token.symbol is Symbol.EOF:
+            raise
+
+        else:
+            token = self.current_token
+            self.current_token = None
+            return token()
