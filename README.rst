@@ -12,7 +12,7 @@ Overview
     * - tests
       - | |travis| |requires|
         | |coveralls| |codecov|
-        | |scrutinize|
+        | |scrutinize| |codeclimate|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
@@ -39,6 +39,10 @@ Overview
 .. |scrutinize| image:: https://scrutinizer-ci.com/g/gmantelet/python-lyth/badges/quality-score.png?b=master
     :target: https://scrutinizer-ci.com/g/gmantelet/python-lyth/
     :alt: Code Quality Status
+
+.. |codeclimate| image:: https://api.codeclimate.com/v1/badges/b36f1391dc0e558f65ec/maintainability
+   :target: https://codeclimate.com/github/gmantelet/python-lyth/maintainability
+   :alt: Maintainability
 
 .. |version| image:: https://img.shields.io/pypi/v/lyth.svg
     :alt: PyPI Package latest release
