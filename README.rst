@@ -12,7 +12,7 @@ Overview
     * - tests
       - | |travis| |requires|
         | |coveralls| |codecov|
-        | |scrutinize| |codeclimate|
+        | |codeclimate|
     * - package
       - | |version| |wheel| |supported-versions| |supported-implementations|
         | |commits-since|
@@ -35,10 +35,6 @@ Overview
 .. |codecov| image:: https://codecov.io/github/gmantelet/python-lyth/coverage.svg?branch=master
     :alt: Coverage Status
     :target: https://codecov.io/github/gmantelet/python-lyth
-
-.. |scrutinize| image:: https://scrutinizer-ci.com/g/gmantelet/python-lyth/badges/quality-score.png?b=master
-    :target: https://scrutinizer-ci.com/g/gmantelet/python-lyth/
-    :alt: Code Quality Status
 
 .. |codeclimate| image:: https://api.codeclimate.com/v1/badges/b36f1391dc0e558f65ec/maintainability
    :target: https://codeclimate.com/github/gmantelet/python-lyth/maintainability
