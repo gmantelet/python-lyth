@@ -28,7 +28,7 @@ def test_parser_invalid_expression():
     parser("1 + 2 + /\n")
 
     with pytest.raises(LythSyntaxError) as err:
-        expr = next(parser)
+        next(parser)
 
     assert err.value.msg is LythError.NUMERAL_EXPECTED
     assert err.value.filename == "<stdin>"
@@ -46,11 +46,10 @@ def test_parser_invalid_line():
     parser("1 + 2 +\n")
 
     with pytest.raises(LythSyntaxError) as err:
-        expr = next(parser)
+        next(parser)
 
     assert err.value.msg is LythError.INCOMPLETE_LINE
     assert err.value.filename == "<stdin>"
     assert err.value.lineno == 1
     assert err.value.offset == -1
     assert err.value.line == ""
-
