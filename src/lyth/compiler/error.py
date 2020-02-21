@@ -11,10 +11,12 @@ class LythError(Enum):
     a lyth script.
     """
     OK = "No error - keep up the good work!"
+    INCOMPLETE_LINE = "Incomplete line"
     INVALID_CHARACTER = "Invalid character"
+    MISSING_EMPTY_LINE = "Missing empty line right before end of file"
     MISSING_SPACE_BEFORE_OPERATOR = "Missing space before operator"
     MISSING_SPACE_AFTER_OPERATOR = "Missing space after operator"
-    MISSING_EMPTY_LINE = "Missing empty line right before end of file"
+    NUMERAL_EXPECTED = "Numeral expected"
     SYNTAX_ERROR = "Invalid syntax"
 
 

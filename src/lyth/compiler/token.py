@@ -35,7 +35,7 @@ class Symbol(_Lexeme):
     # AND = '&'                  # Binary mask
     # ANDAUG = '&='              # Augmented assignment (idiom for a = a & x)
     # ASSIGN = ':='              # Assigning an immutable value
-    # CEIL = '//'                # Also known as integer division
+    CEIL = '//'                # Also known as integer division
     # CHAR = "'"                 # Desginates an ASCII translation of an integer
     # COLON = ':'                # Beginning of a block of code
     # COMMA = ','                # Delimiter for a set of parameters
@@ -43,7 +43,7 @@ class Symbol(_Lexeme):
     # COMP = '=='                # Testing equality
     # DEC = '--'                 # Decrementing (idiom for a = a - 1)
     # DIFF = '!='                # Different than, not equal than
-    # DIV = '/'                  # Also known as float division
+    DIV = '/'                  # Also known as float division
     # DOC = '"""'                # Docstring
     # DOT = '.'                  # Access to an attribute (or design self)
     EOF = None                 # End of file. StopIteration after this token
@@ -54,7 +54,7 @@ class Symbol(_Lexeme):
     # INC = '++'                 # Incrementing (idiom for a = a + 1)
     # INDENT = '  '              # Multiple of two spaces at column 0
     # MOD = '%'                  # Modulo, the remainder of integer division
-    # MUL = '*'                  # Multiplication symbol for expressions
+    MUL = '*'                  # Multiplication symbol for expressions
     # LPAREN = '('               # Left parenthesis
     # LSHIFT = '<<'              # Left shift operator
     # LSHIFTAUG = '>>='          # Augmented shift (idiom for a = a << x)
@@ -208,8 +208,20 @@ class Token:
 
         raise LythSyntaxError(self.info, msg=LythError.SYNTAX_ERROR)
 
+    def __eq__(self, symbol):
+        """
+        Testing this token is of provided symbol.
+        """
+        return self.symbol == symbol
+
     def __repr__(self):
+        """
+        The representation of this instance of the token plus some information.
+        """
         return f"Token({self.symbol.name}, {self.lexeme}, {self.info.lineno}, {self.info.offset})"
 
     def __str__(self):
+        """
+        A Name Value string representation of this instance of the token.
+        """
         return f"{self.symbol.name}: {self.lexeme}"

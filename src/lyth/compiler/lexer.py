@@ -34,6 +34,7 @@ class Lexer:
         source code character by character. It makes the lexer an iterable,
         ready to call next upon.
         """
+        self.current_token = None
         self.scan(text, source)
 
     def __iter__(self):
