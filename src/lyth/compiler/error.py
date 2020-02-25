@@ -2,7 +2,13 @@
 This module lists all the bad thing that can happen during the execution of a
 compiler.
 """
+from __future__ import annotations
+
 from enum import Enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from lyth.compiler.token import TokenInfo
 
 
 class LythError(Enum):
@@ -26,7 +32,7 @@ class LythSyntaxError(Exception):
     The SyntaxError with an alias linking it to the lyth code, not the python
     execution itself.
     """
-    def __init__(self, info, msg=LythError.SYNTAX_ERROR):
+    def __init__(self, info: TokenInfo, msg: LythError = LythError.SYNTAX_ERROR) -> None:
         super().__init__(f"{msg.value} at '{info.filename}', line {info.lineno}:\n\t"
                          f"{info.line}\n\t{' ' * info.offset}^")
 

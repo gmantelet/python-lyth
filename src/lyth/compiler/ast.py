@@ -1,16 +1,23 @@
 """
 This module defines Abstract Syntaxt Tree nodes
 """
+from __future__ import annotations
+
 from enum import Enum
 from types import SimpleNamespace
+from typing import Optional
+from typing import Union
 
 from lyth.compiler.token import Literal
 from lyth.compiler.token import Symbol
+from lyth.compiler.token import Token
 from lyth.compiler.token import TokenInfo
 
 
 class NodeType(Enum):
     """
+    Provides a list of all the valid AST nodes an interpreter must be able to
+    visit.
     """
     Add = Symbol.ADD
     Mul = Symbol.MUL
@@ -19,7 +26,7 @@ class NodeType(Enum):
     Sub = Symbol.SUB
 
     @classmethod
-    def as_value(cls, symbol):
+    def as_value(cls, symbol: Optional[str]) -> NodeType:
         """
         Return the enumeration type based on the symbol provided or None if the
         symbol is not in the enumeration.
@@ -44,7 +51,7 @@ class Node:
     such as the filename, the line number and the column in corresponding
     source code.
     """
-    def __init__(self, token, *nodes):
+    def __init__(self, token: Token, *nodes: Optional[Node]) -> Node:
         """
         Instantiate a new AST Node object.
 
@@ -61,7 +68,7 @@ class Node:
         self.line = token.info.line
 
     @classmethod
-    def noop(cls):
+    def noop(cls) -> Node:
         """
         A no operation AST node.
 
@@ -72,27 +79,27 @@ class Node:
         ns = SimpleNamespace(symbol=None, lexeme='', info=info)
         return cls(ns)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         The string representing this node with the type fully spelled.
         """
         return f"{self.name}({', '.join([str(c) for c in self._children])})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         The string representing this node.
         """
         return f"{self.name.name}({', '.join([str(c) for c in self._children])})"
 
     @property
-    def info(self):
+    def info(self) -> TokenInfo:
         """
         Returns the original token information.
         """
         return TokenInfo(self.filename, self.lineno, self.offset, self.line)
 
     @property
-    def left(self):
+    def left(self) -> Union[Node, Union[int, str]]:
         """
         The left-hand member if this is a binary operator.
         """
@@ -102,7 +109,7 @@ class Node:
         raise AttributeError("This node is a leaf. Please use 'value'")
 
     @property
-    def right(self):
+    def right(self) -> Union[Node, Union[int, str]]:
         """
         The right-hand member if this is a binary operator.
         """
@@ -112,7 +119,7 @@ class Node:
         raise AttributeError("This node is a leaf. Please use 'value'")
 
     @property
-    def value(self):
+    def value(self) -> Union[Node, Union[int, str]]:
         """
         The single child node if this is not a binary operator.
         """

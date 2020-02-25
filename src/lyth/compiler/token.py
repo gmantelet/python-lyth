@@ -4,10 +4,14 @@ This module defines a token.
 A token is made of a type and a lexeme. The lexeme is considered immutable, and
 we use here an Enum to describe the types.
 """
+from __future__ import annotations
+
 from enum import Enum
+from typing import Optional
 
 from lyth.compiler.error import LythError
 from lyth.compiler.error import LythSyntaxError
+from lyth.compiler.scanner import Scanner
 
 
 class _Lexeme(Enum):
@@ -15,7 +19,7 @@ class _Lexeme(Enum):
     A generic enumeration with a couple of helpers to inherit from.
     """
     @classmethod
-    def as_value(cls, value):
+    def as_value(cls, value: Optional[str]) -> _Lexeme:
         """
         Return the enumeration type based on the value provided or None if the
         value is not in the enumeration.
@@ -113,7 +117,7 @@ class TokenInfo:
     A unit of data capturing a snapshot of the scanner metadata when a Token
     object is instantiated.
     """
-    def __init__(self, filename, lineno, offset, line):
+    def __init__(self, filename: str, lineno: int, offset: int, line: str) -> None:
         self.filename = filename
         self.lineno = lineno
         self.offset = offset
@@ -130,7 +134,7 @@ class Token:
     processing may be required, for instance converting the string lexeme into
     an int etc.
     """
-    def __init__(self, lexeme, scan):
+    def __init__(self, lexeme: str, scan: Scanner) -> None:
         """
         Instantiate a new Token.
 
@@ -156,7 +160,7 @@ class Token:
         self.info = TokenInfo(scan.filename, scan.lineno, scan.offset, scan.line)
         self.lexeme = lexeme
 
-    def __call__(self):
+    def __call__(self) -> Token:
         """
         Finalizes the token.
 
@@ -169,7 +173,7 @@ class Token:
 
         return self
 
-    def __add__(self, lexeme):
+    def __add__(self, lexeme: str) -> Token:
         symbol = Symbol.as_value(self.lexeme + lexeme)
 
         #
@@ -209,19 +213,19 @@ class Token:
 
         raise LythSyntaxError(self.info, msg=LythError.SYNTAX_ERROR)
 
-    def __eq__(self, symbol):
+    def __eq__(self, symbol: _Lexeme) -> bool:
         """
         Testing this token is of provided symbol.
         """
         return self.symbol == symbol
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         The representation of this instance of the token plus some information.
         """
         return f"Token({self.symbol.name}, {self.lexeme!r}, {self.info.lineno}, {self.info.offset})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         A Name Value string representation of this instance of the token.
         """
