@@ -7,7 +7,7 @@ the end.
 """
 from __future__ import annotations
 
-from types import Generator
+from typing import Generator
 
 from lyth.compiler.ast import Node
 from lyth.compiler.error import LythError

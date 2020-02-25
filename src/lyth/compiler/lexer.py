@@ -8,7 +8,7 @@ the Scanner.
 """
 from __future__ import annotations
 
-from types import Generator
+from typing import Generator
 
 from lyth.compiler.error import LythError
 from lyth.compiler.error import LythSyntaxError

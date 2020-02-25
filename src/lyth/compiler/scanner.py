@@ -6,7 +6,7 @@ the Lexer can build tokens from it.
 """
 from __future__ import annotations
 
-from types import Generator
+from typing import Generator
 
 
 class Scanner:
