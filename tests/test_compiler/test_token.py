@@ -108,8 +108,8 @@ def test_symbol():
     assert err.value.offset == 1
     assert err.value.line == " +="
 
-    assert repr(token) == "Token(ADDAUG, +=, 0, 1)"
-    assert str(token) == "ADDAUG: +="
+    assert repr(token) == "Token(ADDAUG, '+=', 0, 1)"
+    assert str(token) == "ADDAUG: '+='"
 
 
 def test_bad_symbol():
@@ -183,3 +183,27 @@ def test_bad_symbol():
     assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
     assert token.info.line == "6;"
+
+
+def test_missing_space_before_symbol():
+    """
+    To validate we get an exception saying the token wants a space to be
+    inserted before the symbol
+    """
+    token = Token("5", TokenInfo("<stdin>", 0, 1, "5+"))
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "5"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.VALUE
+    assert token.info.line == "5+"
+
+    with pytest.raises(LythSyntaxError) as err:
+        token += "+"
+
+    assert token.lexeme == "5"
+    assert err.value.msg is LythError.MISSING_SPACE_BEFORE_OPERATOR
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 0
+    assert err.value.offset == 1
+    assert err.value.line == "5+"

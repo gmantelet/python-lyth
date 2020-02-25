@@ -9,8 +9,7 @@ def test_ast():
     """
     To validate that an AST node can be properly instantiated from a token.
     """
-    lexer = Lexer(Scanner())
-    lexer("1 + 2\n", source="dummy.txt")
+    lexer = Lexer(Scanner("1 + 2\n", filename="dummy.txt"))
 
     node_one = Node(next(lexer))
     assert node_one._children == (1, )

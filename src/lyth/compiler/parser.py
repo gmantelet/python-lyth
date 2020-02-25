@@ -5,124 +5,130 @@ The Parser uses the Lexer to retrieve a series of tokens, and based on these
 tokens, it performs syntax analysis. It should give an Abstract Syntax Tree in
 the end.
 """
+from __future__ import annotations
+
+from types import Generator
+
 from lyth.compiler.ast import Node
 from lyth.compiler.error import LythError
 from lyth.compiler.error import LythSyntaxError
+from lyth.compiler.lexer import Lexer
 from lyth.compiler.token import Literal
 from lyth.compiler.token import Symbol
+from lyth.compiler.token import Token
 
 
 class Parser:
     """
     The syntax analyzer for a given source code.
     """
-    def __init__(self, lexer):
+    def __init__(self, lexer: Lexer) -> None:
         """
-        Instantiates a new parser object.
+        Instantiate a new parser object.
 
-        Attributes:
-            lexer   (Lexer)  : An instance of a lexer.
-            tokens  (list)   : Keeping track of past tokens when a miss is
-                               detected.
+        The lexer requires an instance of a lexer on a source of characters.
+        It can be anything that is an iterable, a generator that eventually
+        raises StopIteration, as long as it returns tokens.
         """
-        self.lexer = lexer
-        self.tokens = []
+        self.lexer: Lexer = lexer
+        self.token: Token = None
+        self._stream: Generator[Token, None, None] = self._next()
 
-    def __call__(self, text, source="<stdin>"):
+    def __call__(self) -> Node:
         """
-        Starts the syntax analysis on the source code provided as parameter.
+        Retrieve the next AST node from block of source code.
 
-        It bootstraps the Lexer, making it an iterable, ready to use its
-        scanner and produce a series of tokens. It also makes the parser an
-        iterable, ready to call next upon.
+        It fetches the next node from line, or if line ends with a colon ':',
+        the block of lines beginning by the same indent. If the end of line or
+        block is reached, it returns the node.
         """
-        self.lexer(text, source)
+        return next(self._stream)
 
-    def __iter__(self):
+    def __iter__(self) -> Lexer:
         """
-        Make this analyzer iterable.
+        Convenience method to make this instance interable.
         """
         return self
 
-    def __next__(self):
+    def __next__(self) -> Node:
         """
-        Produces the next AST node from analyzed source code.
+        Convenience method to retrieve the next token in source code.
 
-        Each iteration is a line or a block of code. A block of code is started
-        with ':' and ended when the indent decreases.
+        This is used if you really need to use this instance as an iterator as
+        I did in some of my test case for convenience. Otherwise, the instance
+        is callable because it has practically only one meaning in life which
+        is fetching the next node from line...
         """
-        return self.expression()
+        return next(self._stream)
 
-    def addition(self):
-        """
-        Looking for a plus or a minus sign.
-
-        It returns the result of a numeral, or a chain of additions and
-        multiplication nodes.
-        """
-        return self.binaryop(self.multiplication(), Symbol.ADD, Symbol.SUB)
-
-    def expression(self):
+    def _next(self) -> Node:
         """
         Looking for an expression, starting with addition first, which has no
         preemption.
         """
-        return self.addition()
+        while True:
+            node = self.addition()
 
-    def multiplication(self):
+            if self.token is not None and self.token.symbol is Symbol.EOF:
+                yield node
+                break
+
+            if self.token is not None and self.token.symbol is not Symbol.EOL:
+                raise LythSyntaxError(self.token.info, msg=LythError.GARBAGE_CHARACTERS)
+
+            yield node
+
+    def addition(self) -> Node:
         """
-        Looking for a multiplier or a divider sign.
+        Looking for a token that could lead to an addition or a substraction.
 
-        It returns the result of a numeral, or a chain of multiplication nodes.
+        It returns the result of a numeral, or a chain of additions. If an
+        unexpected symbol is discovered while itself is fetching the next
+        token, then it saves the token and return the current node.
+
+        If the left member is an end of line or an end of file, then it means
+        that we are starting with an empty line, and in this case, a Noop node
+        is being returned.
         """
-        return self.binaryop(self.numeral(), Symbol.MUL, Symbol.DIV, Symbol.CEIL)
+        try:
+            node = self.numeral()
 
-    def numeral(self):
+        except LythSyntaxError as lse:
+            if lse.msg is LythError.INCOMPLETE_LINE:
+                return Node.noop()
+
+            raise
+
+        while True:
+            token = next(self.lexer)
+
+            if token in (Symbol.ADD, Symbol.SUB):
+                node = Node(token, node, self.numeral())
+
+            else:
+                self.token = token
+                break
+
+        return node
+
+    def numeral(self) -> Node:
         """
-        Looking for a numeral.
+        Looking for a literal token to make it a numeral.
 
-        A numeral can be of the following form: '5', '+5', '-5'.
-        1. If a sign is found while looking for a value, then next token should
-           be a numeral. Affect its lexeme if it is a minus sign.
-        2. End of file has been encountered while looking for a value. This is
-           a syntax error.
-        3. Non value tokens means we deal with something that is not a numeral.
+        Numeral does not expect the line to be terminated, or the source code
+        to have an end. If it is the case, then an exception saying that it was
+        unsuccessful is raised instead.
+
+        If the token being parsed is not a literal of type value, then it also
+        raises an exception saying the symbol is invalid and that it should be
+        a numeral instead.
         """
-        token = next(self.lexer)
+        token = self.lexer()
 
-        if token == Symbol.EOF:
+        if token in (Symbol.EOF, Symbol.EOL):
             raise LythSyntaxError(token.info, msg=LythError.INCOMPLETE_LINE)
 
         elif token != Literal.VALUE:
             raise LythSyntaxError(token.info, msg=LythError.NUMERAL_EXPECTED)
 
         return Node(token)
-
-    def binaryop(self, node, *operators):
-        """
-        Looking for a specific set of operators.
-
-        The method follows this recipe:
-        1. Fetch the next token
-        2. If the token is the expected one: for example, '*', '/', '//', then
-           process and look for a right member, which should be a numeral, and
-           go back to step 1.
-        2. If it this is "something else", for instance a '+', an '=', an '=='
-           operator, push it to the stack, and return the left member instead.
-        """
-        while True:
-            try:
-                token = self.tokens.pop()
-
-            except IndexError:
-                self.tokens.append(next(self.lexer))
-                continue
-
-            if token in operators:
-                node = Node(token, node, self.numeral())
-
-            else:
-                self.tokens.append(token)
-                break
-
-        return node

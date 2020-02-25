@@ -1,31 +1,52 @@
 """
-Module that contains the command line app.
-
-Why does this file exist, and why not put this in __main__?
-
-  You might be tempted to import things from __main__ later, but that will cause
-  problems: the code will get executed twice:
-
-  - When you run `python -mlyth` python will execute
-    ``__main__.py`` as a script. That means there won't be any
-    ``lyth.__main__`` in ``sys.modules``.
-  - When you import __main__ it will get executed again (as a module) because
-    there's no ``lyth.__main__`` in ``sys.modules``.
-
-  Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
+Module that contains the command line application.
 """
 import sys
+import traceback
+
+from lyth.compiler.error import LythSyntaxError
+from lyth.compiler.interpreter import Interpreter
+from lyth.compiler.lexer import Lexer
+from lyth.compiler.parser import Parser
+from lyth.compiler.scanner import Scanner
+from lyth.usage import fetch
 
 
 def main(argv=sys.argv):
     """
-    Args:
-        argv (list): List of arguments
-
-    Returns:
-        int: A return code
-
-    Does stuff.
+    The main entry point of the application.
     """
-    print(argv)
-    return 0
+    settings = fetch(argv[1:])
+    error = 0
+
+    interpreter = Interpreter()
+
+    count = 0
+
+    while count <= settings.cycle:
+        try:
+            scanner = Scanner(input('>>> ') + "\n")
+            parser = Parser(Lexer(scanner))
+
+            cmd = next(parser)
+
+            if cmd is not None:
+                print(interpreter.visit(cmd))
+
+        except LythSyntaxError as e:
+            print(e)
+
+        except KeyboardInterrupt:
+            break
+
+        except Exception:
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            traceback.print_exception(exc_type, exc_value, exc_tb)
+            error = 1
+            break
+
+        if settings.cycle:
+            count += 1
+
+    print("Goodbye.")
+    return error

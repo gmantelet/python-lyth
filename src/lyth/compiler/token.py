@@ -47,6 +47,7 @@ class Symbol(_Lexeme):
     # DOC = '"""'                # Docstring
     # DOT = '.'                  # Access to an attribute (or design self)
     EOF = None                 # End of file. StopIteration after this token
+    EOL = "\n"                 # End of line.
     # EQ = '='                   # Assigning a mutable value
     # FLIP = '!'                 # Bit flip operator
     # GT = '>'                   # Testing greater than
@@ -218,10 +219,10 @@ class Token:
         """
         The representation of this instance of the token plus some information.
         """
-        return f"Token({self.symbol.name}, {self.lexeme}, {self.info.lineno}, {self.info.offset})"
+        return f"Token({self.symbol.name}, {self.lexeme!r}, {self.info.lineno}, {self.info.offset})"
 
     def __str__(self):
         """
         A Name Value string representation of this instance of the token.
         """
-        return f"{self.symbol.name}: {self.lexeme}"
+        return f"{self.symbol.name}: {self.lexeme!r}"

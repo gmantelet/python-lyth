@@ -6,8 +6,13 @@ the Scanner, to get its characters one by one. The scanner keeps track of line
 and column numbering. The Lexer produces Tokens from the characters returned by
 the Scanner.
 """
+from __future__ import annotations
+
+from types import Generator
+
 from lyth.compiler.error import LythError
 from lyth.compiler.error import LythSyntaxError
+from lyth.compiler.scanner import Scanner
 from lyth.compiler.token import Symbol
 from lyth.compiler.token import Token
 
@@ -16,142 +21,120 @@ class Lexer:
     """
     The lexical analyzer for a given source code.
     """
-    def __init__(self, scanner):
+    def __init__(self, scanner: Scanner) -> None:
         """
-        Instantiates a new lexer object.
+        Instantiate the lexer.
 
-        Attributes:
-            scanner (Scanner): An instance of a scanner.
+        The lexer requires an instance of a scanner on a source of characters.
+        It can be anything that is an iterable, a generator that eventually
+        raises StopIteration.
         """
-        self.current_token = None
-        self.scan = scanner
+        self.scanner: Scanner = scanner
+        self._stream: Generator[Token, None, None] = self.next()
 
-    def __call__(self, text, source="<stdin>"):
+    def __call__(self) -> Token:
         """
-        Starts the lexical analysis on the source code provided as parameter.
+        Retrieve the next token in source code.
 
-        It bootstraps the Scanner, making it an iterable, ready to scan the
-        source code character by character. It makes the lexer an iterable,
-        ready to call next upon.
-        """
-        self.current_token = None
-        self.scan(text, source)
+        It fetches the next token in line, and if the end of line is
+        reached, it inserts an EOL token.
 
-    def __iter__(self):
+        If the end of the source code is reached, the StopIteration exception
+        is tested. An empty line should be detected or a syntax error is
+        raised. Eventually, the end of file is processed as a space, and an EOF
+        token is appended.
         """
-        Make this analyzer iterable.
+        return next(self._stream)
+
+    def __iter__(self) -> Lexer:
+        """
+        Convenience method to make this instance interable.
         """
         return self
 
-    def __next__(self):
+    def __next__(self) -> Token:
         """
-        Produces the next token from scanned source code.
+        Convenience method to retrieve the next token in source code.
 
-        Spaces delimit tokens. The Scanner is ran until a space is found, or
-        unless an exception is raised from the Scanner.
+        This is used if you really need to use this instance as an iterator as
+        I did in some of my test case for convenience. Otherwise, the instance
+        is callable because it has practically only one meaning in life which
+        is fetching the next token...
         """
-        try:
-            char = next(self.scan)
+        return next(self._stream)
 
-            if char.isspace():
-                return self.handle_space_as_delimiter()
-
-            else:
-                return self.handle_char(char)
-
-        except StopIteration:
-            return self.handle_eof()
-
-        except LythSyntaxError as lyth_error:
-            return self.handle_syntax_error(char, lyth_error)
-
-    def handle_char(self, char):
+    def next(self) -> Token:
         """
-        Handle the non space character obtained from the Scanner.
+        Get the next token in source being scanned.
 
-        Two options depends on whether we are currently building up a token or
-        we need to create a new one:
-        1. First character of a new token. Create a new token and move to next
-           character.
-        2. Successive character of an existing token. Go on building current
-           token (aggregate) and get next character from scanner.
-                NOTE: This step may raise MISSING_SPACE_AFTER_OPERATOR error.
-                      The lexer needs to check if it can ignore the error. For
-                      example, '+5' or '-5' are valid cases, and the parser
-                      needs to check if it is a sign or an operator.
+        This method assumes spaces as delimiters. Spaces in python comprise
+        escape characters (feed line etc.) as well. It yields tokens upon space
+        and successive spaces are ignored.
+
+        There are multiple case to consider here.
+        1. A space is detected and a token is being built. The generator yields
+           the token, effectively stopping its construction.
+        2. If the space is a feed line character, the generator yields a new
+           EOL token right after.
+        3. Other spaces following are ignored, looping through the while loop
+           to retrieve another character (and so on)
+        4. If it is not a space and no token is present, then we start creating
+           one.
+        5. If it is not a space and a token is present, then we continue the
+           construction of the current token.
+
+        When the end of file is reached:
+        1. If the scanner reached the end of its source, and the last token is
+           not an EOL located at the begining of previous file, then the
+           generator pedanticly asks for an empty line.
+        2. EOF is treated as an empty space, the generator yields the last
+           token, effectively stopping its construction.
+        3. The generator then adds an EOF token and leaves the while loop,
+           causing the generator to raise StopIteration on future next() calls.
+
+        Exceptions can be ignored:
+        1. The scanner pedanticly requires that symbols are separated with
+           spaces. However '+5', '-5' and '5!' are examples of valid
+           expressions. The generator yields current token and starts a new
+           one.
         """
-        if self.current_token is None:
-            self.current_token = Token(char, self.scan)
+        token = None
 
-        else:
-            self.current_token += char
+        while True:
+            try:
+                char = self.scanner()
 
-        return next(self)
+                if char.isspace():
+                    if token is not None:
+                        yield token()
 
-    def handle_eof(self):
-        """
-        The scanner is depleted. We reached end of source code.
+                    if char == '\n':
+                        yield Token('\n', self.scanner)
 
-        At that point, we have four options:
-        1. The last line checked on the scanner was an empty line. If not we
-           raise an exception.
-        2. There is no current token being processed, we are ready to return an
-           End Of File token.
-        3. The current token is an end of file, we need to propagate the
-           StopIteration exception from the scanner to avoid infinite loops on
-           objects using this instance as iterator.
-        4. There was a token being processed. We need to return it before we
-           send an End Of File token.
-        """
-        if self.scan.line:
-            raise LythSyntaxError(self.scan, msg=LythError.MISSING_EMPTY_LINE) from None
+                    token = None
 
-        if self.current_token is None:
-            token = Token(None, self.scan)
-            self.current_token = token
-            return token()
+                elif token is None:
+                    token = Token(char, self.scanner)
 
-        elif self.current_token.symbol is Symbol.EOF:
-            raise
+                else:
+                    token += char
 
-        else:
-            token = self.current_token
-            self.current_token = None
-            return token()
+            except StopIteration:
+                if token is not None and (token.symbol is not Symbol.EOL or token.lineno != 0):
+                    raise LythSyntaxError(token.info, msg=LythError.MISSING_EMPTY_LINE) from None
 
-    def handle_space_as_delimiter(self):
-        """
-        Spaces are token delimitors.
+                if token is not None:
+                    yield token()
 
-        There are two options depending on whether it is the first time the
-        scanner encounters a space:
-        1. First space encountered after an existing token is being constructed
-           (aggregated). This causes the current token to be returned.
-        2. Multiple spaces encountered. Skip, and move to next character
-        """
-        if self.current_token is not None:
-            token = self.current_token
-            self.current_token = None
-            return token()
+                token = Token(None, self.scanner)
+                yield token
+                break
 
-        else:
-            return next(self)
+            except LythSyntaxError as error:
+                if error.msg is LythError.MISSING_SPACE_AFTER_OPERATOR:
+                    if token is not None and token.symbol in (Symbol.ADD, Symbol.SUB):
+                        yield token()
+                        token = Token(char, self.scanner)
+                        continue
 
-    def handle_syntax_error(self, char, error):
-        """
-        We tried to concatenate a token, but there was a LythSyntaxError raised.
-
-        There are a couple of tolerated cases at this stage of the analysis:
-        1. The lexical analysis tolerates missing space after '+' or '-' only
-           if these symbols represent a sign, and not an operator. The Parser
-            would raise such an error at its stage.
-        2. In any other LythSyntaxError, the exception is propagated.
-        """
-        token = self.current_token
-
-        if error.msg is LythError.MISSING_SPACE_AFTER_OPERATOR:
-            if token is not None and token.symbol in (Symbol.ADD, Symbol.SUB):
-                self.current_token = Token(char, self.scan)
-                return token()
-
-        raise
+                raise

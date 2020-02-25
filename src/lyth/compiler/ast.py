@@ -2,6 +2,7 @@
 This module defines Abstract Syntaxt Tree nodes
 """
 from enum import Enum
+from types import SimpleNamespace
 
 from lyth.compiler.token import Literal
 from lyth.compiler.token import Symbol
@@ -12,6 +13,7 @@ class NodeType(Enum):
     """
     Add = Symbol.ADD
     Num = Literal.VALUE
+    Noop = None
 
     @classmethod
     def as_value(cls, symbol):
@@ -54,6 +56,18 @@ class Node:
         self.lineno = token.info.lineno
         self.offset = token.info.offset
         self.line = token.info.line
+
+    @classmethod
+    def noop(cls):
+        """
+        A no operation AST node.
+
+        When the parser deciphers an empty line, rather than returning None, it
+        returns this AST node instead.
+        """
+        info = SimpleNamespace(filename='noop', lineno=-1, offset=-1, line='')
+        ns = SimpleNamespace(symbol=None, lexeme='', info=info)
+        return cls(ns)
 
     def __repr__(self):
         """

@@ -11,6 +11,7 @@ class LythError(Enum):
     a lyth script.
     """
     OK = "No error - keep up the good work!"
+    GARBAGE_CHARACTERS = "Garbage characters ending line"
     INCOMPLETE_LINE = "Incomplete line"
     INVALID_CHARACTER = "Invalid character"
     MISSING_EMPTY_LINE = "Missing empty line right before end of file"
