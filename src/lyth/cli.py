@@ -29,14 +29,13 @@ def main(argv=sys.argv):
             parser = Parser(Lexer(scanner))
 
             cmd = next(parser)
-
-            if cmd is not None:
-                print(interpreter.visit(cmd))
+            print(interpreter.visit(cmd))
 
         except LythSyntaxError as e:
             print(e)
 
         except KeyboardInterrupt:
+            print("Keyboard interrupt")
             break
 
         except Exception:

@@ -51,7 +51,8 @@ def test_scanner():
             assert f"{scan!r}" == f"in line 1 column {i - 5}:\n\t\"  a := 1 + 2\"\n\t{' ' * (i - 4)}^"
             assert scan.line == '  a := 1 + 2'
 
-        elif i == 17:
+        # elif i == 17:
+        else:
             assert e == '\n'
             assert scan.lineno == 1
             assert scan.offset == i - 6
@@ -77,3 +78,63 @@ def test_scanner():
     assert f"{scan!s}" == f"in line 2 column -1"
     assert f"{scan!r}" == f"in line 2 column -1:\n\t\"\"\n\t^"
     assert scan.line == ''
+
+
+def test_special_space():
+    """
+    To validate the scanner ignores "\r".
+    """
+    s = "let\r:\n"
+    scan = Scanner(s)
+
+    for i, e in enumerate(scan):
+
+        if i < 3:
+            assert e == s[i]
+            assert scan.lineno == 0
+            assert scan.offset == i
+            assert f"{scan!s}" == f"in line 0 column {i}"
+            assert f"{scan!r}" == f"in line 0 column {i}:\n\t\"let:\"\n\t{' ' * (i + 1)}^"
+            assert scan.line == 'let:'
+
+        elif i == 3:
+            assert e == s[i + 1]
+            assert scan.lineno == 0
+            assert scan.offset == i
+            assert f"{scan!s}" == f"in line 0 column {i}"
+            assert f"{scan!r}" == f"in line 0 column {i}:\n\t\"let:\"\n\t{' ' * (i + 1)}^"
+            assert scan.line == 'let:'
+
+
+def test_tabulation():
+    """
+    To validate the scanner considers "\t" as a single character, but double space.
+    """
+    s = "let\t:\n"
+    scan = Scanner(s)
+
+    for i, e in enumerate(scan):
+
+        if i < 3:
+            assert e == s[i]
+            assert scan.lineno == 0
+            assert scan.offset == i
+            assert f"{scan!s}" == f"in line 0 column {i}"
+            assert f"{scan!r}" == f"in line 0 column {i}:\n\t\"let  :\"\n\t{' ' * (i + 1)}^"
+            assert scan.line == 'let  :'
+
+        elif i == 3:
+            assert e == " "
+            assert scan.lineno == 0
+            assert scan.offset == 3
+            assert f"{scan!s}" == f"in line 0 column {3}"
+            assert f"{scan!r}" == f"in line 0 column {3}:\n\t\"let  :\"\n\t{' ' * 4}^"
+            assert scan.line == 'let  :'
+
+        elif i == 4:
+            assert e == " "
+            assert scan.lineno == 0
+            assert scan.offset == 3
+            assert f"{scan!s}" == f"in line 0 column {3}"
+            assert f"{scan!r}" == f"in line 0 column {3}:\n\t\"let  :\"\n\t{' ' * 4}^"
+            assert scan.line == 'let  :'

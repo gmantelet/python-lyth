@@ -6,14 +6,17 @@ from types import SimpleNamespace
 
 from lyth.compiler.token import Literal
 from lyth.compiler.token import Symbol
+from lyth.compiler.token import TokenInfo
 
 
 class NodeType(Enum):
     """
     """
     Add = Symbol.ADD
+    Mul = Symbol.MUL
     Num = Literal.VALUE
     Noop = None
+    Sub = Symbol.SUB
 
     @classmethod
     def as_value(cls, symbol):
@@ -80,6 +83,13 @@ class Node:
         The string representing this node.
         """
         return f"{self.name.name}({', '.join([str(c) for c in self._children])})"
+
+    @property
+    def info(self):
+        """
+        Returns the original token information.
+        """
+        return TokenInfo(self.filename, self.lineno, self.offset, self.line)
 
     @property
     def left(self):

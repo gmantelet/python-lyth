@@ -123,9 +123,6 @@ class Lexer:
                 if token is not None and (token.symbol is not Symbol.EOL or token.lineno != 0):
                     raise LythSyntaxError(token.info, msg=LythError.MISSING_EMPTY_LINE) from None
 
-                if token is not None:
-                    yield token()
-
                 token = Token(None, self.scanner)
                 yield token
                 break

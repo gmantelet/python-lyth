@@ -67,16 +67,17 @@ class Parser:
         preemption.
         """
         while True:
-            node = self.addition()
+            try:
+                node = self.addition()
 
-            if self.token is not None and self.token.symbol is Symbol.EOF:
-                yield node
+            except StopIteration:
                 break
 
             if self.token is not None and self.token.symbol is not Symbol.EOL:
-                raise LythSyntaxError(self.token.info, msg=LythError.GARBAGE_CHARACTERS)
+                raise LythSyntaxError(node.info, msg=LythError.GARBAGE_CHARACTERS)
 
             yield node
+            self.token = None
 
     def addition(self) -> Node:
         """
@@ -91,7 +92,7 @@ class Parser:
         is being returned.
         """
         try:
-            node = self.numeral()
+            node = self.multiplication()
 
         except LythSyntaxError as lse:
             if lse.msg is LythError.INCOMPLETE_LINE:
@@ -100,9 +101,36 @@ class Parser:
             raise
 
         while True:
-            token = next(self.lexer)
+            token = self.token or next(self.lexer)
 
             if token in (Symbol.ADD, Symbol.SUB):
+                self.token = None
+                node = Node(token, node, self.multiplication())
+
+            else:
+                self.token = token
+                break
+
+        return node
+
+    def multiplication(self) -> Node:
+        """
+        Looking for a token that could lead to a multiplication or a form of
+        division.
+
+        It returns the result of a numeral, or a chain of multiplication. It
+        takes precedence over additions. If an unexpected symbol is discovered,
+        as it can be for example an addition which is less prioritary than it,
+        then it saves it and return the current node it is working on, that may
+        be a numeral.
+        """
+        node = self.numeral()
+
+        while True:
+            token = self.token or next(self.lexer)
+
+            if token in (Symbol.MUL, Symbol.DIV, Symbol.CEIL):
+                self.token = None
                 node = Node(token, node, self.numeral())
 
             else:

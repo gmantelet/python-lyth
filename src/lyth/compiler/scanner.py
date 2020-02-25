@@ -76,7 +76,8 @@ class Scanner:
         """
         begin = self.data.rfind('\n', 0, self.index - 1)
         end = self.data.find('\n', self.index - 1)
-        return self.data[begin + 1: end] if end >= 0 else self.data[begin + 1:]
+        data = self.data[begin + 1: end] if end >= 0 else self.data[begin + 1:]
+        return data.replace('\r', '').replace('\t', '  ')
 
     def next(self) -> str:
         """
@@ -131,7 +132,7 @@ class Scanner:
         Returns the character being scanned in the corresponding line or source
         code.
         """
-        return f"{self!s}:\n\t\"{self.line}\"\n\t{' ' * (self.offset + 1)}^"
+        return f"{self!s}:\n\t\"{self.line.replace(chr(13), '').replace(chr(9), '  ')}\"\n\t{' ' * (self.offset + 1)}^"
 
     def __str__(self) -> str:
         """
