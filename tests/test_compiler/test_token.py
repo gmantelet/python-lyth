@@ -207,3 +207,143 @@ def test_missing_space_before_symbol():
     assert err.value.lineno == 0
     assert err.value.offset == 1
     assert err.value.line == "5+"
+
+
+
+def test_literal():
+    """
+    To test various conditions on strings that name a variable.
+    """
+    token = Token("h", TokenInfo("<stdin>", 0, 1, "he"))
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "h"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "he"
+
+    token += 'e'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "he"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "he"
+
+    token = Token("_", TokenInfo("<stdin>", 0, 1, "_e_12__"))
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_e_12__"
+
+    token += 'e'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_e"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_e_12__"
+
+    token += '_'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_e_"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_e_12__"
+
+    token += '1'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_e_1"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_e_12__"
+
+    token += '2'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_e_12"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_e_12__"
+
+    token += '_'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_e_12_"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_e_12__"
+
+    token += '_'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_e_12__"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_e_12__"
+
+    token = Token("h", TokenInfo("<stdin>", 0, 1, "h+"))
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "h"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "h+"
+
+    with pytest.raises(LythSyntaxError) as err:
+        token += "+"
+
+    assert token.lexeme == "h"
+    assert err.value.msg is LythError.MISSING_SPACE_BEFORE_OPERATOR
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 0
+    assert err.value.offset == 1
+    assert err.value.line == "h+"
+
+    token = Token("_", TokenInfo("<stdin>", 0, 1, "_+"))
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_+"
+
+    with pytest.raises(LythSyntaxError) as err:
+        token += "+"
+
+    assert token.lexeme == "_"
+    assert err.value.msg is LythError.MISSING_SPACE_BEFORE_OPERATOR
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 0
+    assert err.value.offset == 1
+    assert err.value.line == "_+"
+
+    token = Token("_", TokenInfo("<stdin>", 0, 1, "_1+"))
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_1+"
+
+    token += "1"
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "_1"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "_1+"
+
+    with pytest.raises(LythSyntaxError) as err:
+        token += "+"
+
+    assert token.lexeme == "_1"
+    assert err.value.msg is LythError.MISSING_SPACE_BEFORE_OPERATOR
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 0
+    assert err.value.offset == 1
+    assert err.value.line == "_1+"

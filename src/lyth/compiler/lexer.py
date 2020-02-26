@@ -129,9 +129,16 @@ class Lexer:
 
             except LythSyntaxError as error:
                 if error.msg is LythError.MISSING_SPACE_AFTER_OPERATOR:
-                    if token is not None and token.symbol in (Symbol.ADD, Symbol.SUB):
+                    if token is not None and token.symbol in (Symbol.ADD, Symbol.SUB, Symbol.LPAREN):
                         yield token()
                         token = Token(char, self.scanner)
+                        continue
+
+                elif error.msg is LythError.MISSING_SPACE_BEFORE_OPERATOR:
+                    new_token = Token(char, self.scanner)
+                    if new_token.symbol is Symbol.RPAREN:
+                        yield token()
+                        token = new_token
                         continue
 
                 raise

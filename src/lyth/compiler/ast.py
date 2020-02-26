@@ -21,8 +21,9 @@ class NodeType(Enum):
     """
     Add = Symbol.ADD
     Mul = Symbol.MUL
-    Num = Literal.VALUE
+    Name = Literal.STRING
     Noop = None
+    Num = Literal.VALUE
     Sub = Symbol.SUB
 
     @classmethod

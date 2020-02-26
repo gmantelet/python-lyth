@@ -68,13 +68,10 @@ class Parser:
         """
         while True:
             try:
-                node = self.addition()
+                node = self.expression()
 
             except StopIteration:
                 break
-
-            if self.token is not None and self.token.symbol is not Symbol.EOL:
-                raise LythSyntaxError(node.info, msg=LythError.GARBAGE_CHARACTERS)
 
             yield node
             self.token = None
@@ -113,25 +110,47 @@ class Parser:
 
         return node
 
+    def expression(self, end: Symbol = Symbol.EOL) -> Node:
+        """
+        Looking for a line that could lead to an expression, that is, a series
+        of operations.
+
+        There should be one expression per line, or one expression per pair of
+        parentheses. This is why this method is not a while loop.
+
+        The end parameter determines the token the expression expects to stop.
+        In some cases, expression is started by an opening parenthesis, then
+        the method should have been called with an expected right parenthesis
+        to stop it. The default token otherwise is the end of a line as multi
+        line is not yet supported by lyth.
+        """
+        node = self.addition()
+
+        if self.token is not None and self.token.symbol is not end:
+            raise LythSyntaxError(node.info, msg=LythError.GARBAGE_CHARACTERS)
+
+        self.token = None
+        return node
+
     def multiplication(self) -> Node:
         """
         Looking for a token that could lead to a multiplication or a form of
         division.
 
-        It returns the result of a numeral, or a chain of multiplication. It
+        It returns the result of a literal, or a chain of multiplication. It
         takes precedence over additions. If an unexpected symbol is discovered,
         as it can be for example an addition which is less prioritary than it,
         then it saves it and return the current node it is working on, that may
-        be a numeral.
+        be a literal.
         """
-        node = self.numeral()
+        node = self.literal()
 
         while True:
             token = self.token or next(self.lexer)
 
             if token in (Symbol.MUL, Symbol.DIV, Symbol.CEIL):
                 self.token = None
-                node = Node(token, node, self.numeral())
+                node = Node(token, node, self.literal())
 
             else:
                 self.token = token
@@ -139,24 +158,32 @@ class Parser:
 
         return node
 
-    def numeral(self) -> Node:
+    def literal(self) -> Node:
         """
-        Looking for a literal token to make it a numeral.
+        Looking for a literal token to make it a numeral, or a name.
 
-        Numeral does not expect the line to be terminated, or the source code
+        Literal does not expect the line to be terminated, or the source code
         to have an end. If it is the case, then an exception saying that it was
         unsuccessful is raised instead.
 
+        If the token is an opening parenthesis, then the corresponding node to
+        return will not be a literal, rather a new expression needs to be
+        evaluated.
+
         If the token being parsed is not a literal of type value, then it also
         raises an exception saying the symbol is invalid and that it should be
-        a numeral instead.
+        a literal instead.
         """
         token = self.lexer()
 
         if token in (Symbol.EOF, Symbol.EOL):
             raise LythSyntaxError(token.info, msg=LythError.INCOMPLETE_LINE)
 
-        elif token != Literal.VALUE:
-            raise LythSyntaxError(token.info, msg=LythError.NUMERAL_EXPECTED)
+        elif token == Symbol.LPAREN:
+            print("Detected left parenthesis")
+            return self.expression(end=Symbol.RPAREN)
+
+        elif token not in (Literal.VALUE, Literal.STRING):
+            raise LythSyntaxError(token.info, msg=LythError.LITERAL_EXPECTED)
 
         return Node(token)

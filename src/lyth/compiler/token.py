@@ -38,7 +38,6 @@ class Symbol(_Lexeme):
     ADDAUG = '+='              # Augmented addition (idiom for a = a + x)
     # AND = '&'                  # Binary mask
     # ANDAUG = '&='              # Augmented assignment (idiom for a = a & x)
-    # ASSIGN = ':='              # Assigning an immutable value
     CEIL = '//'                # Also known as integer division
     # CHAR = "'"                 # Desginates an ASCII translation of an integer
     # COLON = ':'                # Beginning of a block of code
@@ -60,7 +59,8 @@ class Symbol(_Lexeme):
     # INDENT = '  '              # Multiple of two spaces at column 0
     # MOD = '%'                  # Modulo, the remainder of integer division
     MUL = '*'                  # Multiplication symbol for expressions
-    # LPAREN = '('               # Left parenthesis
+    LASSIGN = '<-'              # Assigning a value to its left member
+    LPAREN = '('               # Left parenthesis
     # LSHIFT = '<<'              # Left shift operator
     # LSHIFTAUG = '>>='          # Augmented shift (idiom for a = a << x)
     # LT = '<'                   # Testing less than
@@ -69,7 +69,8 @@ class Symbol(_Lexeme):
     # ORAUG = '|='               # Augmented or (idiom for a = a | x)
     # QUOTE = '"'                # Designates a string
     # RANGE = '..'               # Range operator, or bit space
-    # RPAREN = ')'               # Right parenthesis
+    RASSIGN = '->'              # Assigning a value to its right member
+    RPAREN = ')'               # Right parenthesis
     # RSHIFT = '>>'              # Right shif operator
     # RSHIFTAUG = '>>='          # Augmented shift (idiom for a = a >> x)
     SUB = '-'                  # Substraction symbol for expressions
@@ -108,7 +109,7 @@ class Literal(_Lexeme):
 
     Meanings are usually values (integers, floats etc.), or variable naming.
     """
-    # STRING = 'string'          # A \0 terminsated chain of character.
+    STRING = 'string'          # A \0 terminsated chain of characters.
     VALUE = 'value'            # A numeral value.
 
 
@@ -154,6 +155,9 @@ class Token:
         elif lexeme.isdigit():
             self.symbol = Literal.VALUE
 
+        elif lexeme.isalpha() or lexeme == '_':
+            self.symbol = Literal.STRING
+
         else:
             raise LythSyntaxError(scan, msg=LythError.INVALID_CHARACTER)
 
@@ -174,12 +178,32 @@ class Token:
         return self
 
     def __add__(self, lexeme: str) -> Token:
+        """
+        Add a scanned character to an existing token.
+
+        This method validates that the character appended to the existing token
+        keeps the integrity of the token. For example, if the token is made of
+        digits, it is important that the next characters are digits as well.
+        Sometimes the token type changes as well. The comparator '<' could
+        become an assignment if '-' is the next character being scanned.
+
+        The methodology is the following:
+        1. If the new lexeme appended to current lexeme leads to a new symbol,
+           update symbol and new lexeme, and return this instance.
+        2. If the new literal would be a symbol appended to a literal, there is
+           clearly a missing space. Exception, such as '5!' will be corrected
+           by the lexer.
+        3. Appending a digit to a literal leads to appending the lexeme and
+           returning current token.
+        4. Appending an alphanumerical character, or '_', to a string value
+           leads to appending that character to the lexeme and returning
+           current token.
+        5. Appending an alphanumerical character, or '_', leading to a literal
+           right after a symbol, without the presence of a space leads to an
+           error. Exception, such as '-5' will be corrected by the lexer.
+        """
         symbol = Symbol.as_value(self.lexeme + lexeme)
 
-        #
-        # 1. The aggregated lexeme gives a new token.
-        #    For example: '+', becomes '+='
-        #
         if symbol is not None:
             self.symbol = symbol
             self.lexeme += lexeme
@@ -187,31 +211,22 @@ class Token:
 
         symbol = Symbol.as_value(lexeme)
 
-        #
-        # 2. The new lexeme is a symbol, and current token is a Literal
-        #    For example: '5+' or '5=' etc.
-        #
         if symbol is not None and self.symbol in Literal:
             raise LythSyntaxError(self.info, msg=LythError.MISSING_SPACE_BEFORE_OPERATOR)
 
-        #
-        # 3. Continuing a literal
-        #    For example: '5' becomes '55'
-        #
-        if lexeme.isdigit() and self.symbol in Literal:
+        elif lexeme.isdigit() and self.symbol in Literal:
             self.lexeme += lexeme
             return self
 
-        #
-        # 4. The new lexeme is a Literal and current token is a symbol
-        #    For example: '+5' or '=5'
-        #
-        #    NOTE: A syntax error is raised, but the scanner may decide to
-        #          create a new token instead '+5' is valid, '=5' is not.
-        if lexeme.isdigit() and self.symbol in Symbol:
+        elif (lexeme.isalnum() or lexeme == '_') and self.symbol is Literal.STRING:
+            self.lexeme += lexeme
+            return self
+
+        elif (lexeme.isalnum() or lexeme =='_') and self.symbol in Symbol:
             raise LythSyntaxError(self.info, msg=LythError.MISSING_SPACE_AFTER_OPERATOR)
 
-        raise LythSyntaxError(self.info, msg=LythError.SYNTAX_ERROR)
+        else:
+            raise LythSyntaxError(self.info, msg=LythError.SYNTAX_ERROR)
 
     def __eq__(self, symbol: _Lexeme) -> bool:
         """

@@ -21,17 +21,23 @@ class Interpreter:
         """
         return self.visit(node.left) + self.visit(node.right)
 
-    def visit_noop(self, node: Node) -> None:
-        """
-        No operation node requires no further action.
-        """
-        return None
-
     def visit_mul(self, node: Node) -> int:
         """
         A node asking for a multiplication requires a result
         """
         return self.visit(node.left) * self.visit(node.right)
+
+    def visit_name(self, node: Node) -> str:
+        """
+        A variable requires its name to be returned.
+        """
+        return node.value
+
+    def visit_noop(self, node: Node) -> None:
+        """
+        No operation node requires no further action.
+        """
+        return None
 
     def visit_num(self, node: Node) -> int:
         """

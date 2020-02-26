@@ -83,6 +83,21 @@ def test_parser_substraction():
     assert str(expr) == "Noop()"
 
 
+def test_parser_parenthesis():
+    """
+    Parentheses offer the highest precedence and change AST node ordering.
+    """
+    parser = Parser(Lexer(Scanner("1 + (a - 3) * 5\n")))
+
+    expr = next(parser)
+    assert expr.name == NodeType.Add
+    assert str(expr) == "Add(Num(1), Mul(Sub(Name(a), Num(3)), Num(5)))"
+
+    expr = next(parser)
+    assert expr.name == NodeType.Noop
+    assert str(expr) == "Noop()"
+
+
 def test_parser_invalid_expression():
     """
     To validate the parser detects the expression it evaluates is invalid.
@@ -92,7 +107,7 @@ def test_parser_invalid_expression():
     with pytest.raises(LythSyntaxError) as err:
         next(parser)
 
-    assert err.value.msg is LythError.NUMERAL_EXPECTED
+    assert err.value.msg is LythError.LITERAL_EXPECTED
     assert err.value.filename == "<stdin>"
     assert err.value.lineno == 0
     assert err.value.offset == 8
@@ -114,6 +129,17 @@ def test_parser_invalid_line():
     assert err.value.lineno == 0
     assert err.value.offset == 6
     assert err.value.line == "1 + 2 +"
+
+    parser = Parser(Lexer(Scanner("1 + 2 *\n")))
+
+    with pytest.raises(LythSyntaxError) as err:
+        next(parser)
+
+    assert err.value.msg is LythError.INCOMPLETE_LINE
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 0
+    assert err.value.offset == 6
+    assert err.value.line == "1 + 2 *"
 
 
 def test_parser_wrong_expression():
