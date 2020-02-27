@@ -222,7 +222,7 @@ class Token:
             self.lexeme += lexeme
             return self
 
-        elif (lexeme.isalnum() or lexeme =='_') and self.symbol in Symbol:
+        elif (lexeme.isalnum() or lexeme == '_') and self.symbol in Symbol:
             raise LythSyntaxError(self.info, msg=LythError.MISSING_SPACE_AFTER_OPERATOR)
 
         else:

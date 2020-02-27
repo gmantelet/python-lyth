@@ -209,7 +209,6 @@ def test_missing_space_before_symbol():
     assert err.value.line == "5+"
 
 
-
 def test_literal():
     """
     To test various conditions on strings that name a variable.
