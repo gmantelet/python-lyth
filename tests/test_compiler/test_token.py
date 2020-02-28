@@ -2,6 +2,7 @@ import pytest
 
 from lyth.compiler.error import LythError
 from lyth.compiler.error import LythSyntaxError
+from lyth.compiler.token import Keyword
 from lyth.compiler.token import Literal
 from lyth.compiler.token import Symbol
 from lyth.compiler.token import Token
@@ -346,3 +347,96 @@ def test_literal():
     assert err.value.lineno == 0
     assert err.value.offset == 1
     assert err.value.line == "_1+"
+
+
+def test_keyword():
+    """
+    Are the keywords properly identified?
+    """
+    token = Token("l", TokenInfo("<stdin>", 0, 1, "let"))
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "l"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "let"
+
+    token += 'e'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "le"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "let"
+
+    token += 't'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "let"
+    assert token.info.lineno == 0
+    assert token.symbol == Keyword.LET
+    assert token.info.line == "let"
+
+    token = Token("l", TokenInfo("<stdin>", 0, 1, "lett"))
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "l"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "lett"
+
+    token += 'e'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "le"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "lett"
+
+    token += 't'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "let"
+    assert token.info.lineno == 0
+    assert token.symbol == Keyword.LET
+    assert token.info.line == "lett"
+
+    token += 't'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "lett"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "lett"
+
+    token = Token("a", TokenInfo("<stdin>", 0, 1, "alet"))
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "a"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "alet"
+
+    token += 'l'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "al"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "alet"
+
+    token += 'e'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "ale"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "alet"
+
+    token += 't'
+    assert token.info.offset == 1
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == "alet"
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.STRING
+    assert token.info.line == "alet"

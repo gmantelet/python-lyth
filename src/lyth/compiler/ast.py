@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from typing import Optional
 from typing import Union
 
+from lyth.compiler.token import Keyword
 from lyth.compiler.token import Literal
 from lyth.compiler.token import Symbol
 from lyth.compiler.token import Token
@@ -22,6 +23,7 @@ class NodeType(Enum):
     Add = Symbol.ADD
     Div = Symbol.DIV
     ImmutableAssign = Symbol.RASSIGN
+    Let = Keyword.LET
     Mul = Symbol.MUL
     MutableAssign = Symbol.LASSIGN
     Name = Literal.STRING

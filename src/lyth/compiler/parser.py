@@ -8,12 +8,15 @@ the end.
 from __future__ import annotations
 
 from typing import Generator
+from typing import Optional
+from typing import Tuple
 
 from lyth.compiler.ast import Node
 from lyth.compiler.ast import NodeType
 from lyth.compiler.error import LythError
 from lyth.compiler.error import LythSyntaxError
 from lyth.compiler.lexer import Lexer
+from lyth.compiler.token import Keyword
 from lyth.compiler.token import Literal
 from lyth.compiler.token import Symbol
 from lyth.compiler.token import Token
@@ -131,11 +134,14 @@ class Parser:
         assigned to an immutable name. If name fails, for instance there is an
         expression, or if the token after is not an end of line, then an error
         is returned.
+
+        If there is no assign operator, this method makes sure that there is no
+        let keyword leading the orphan expression.
         """
-        node = self.expression()
+        node, let = self.let()  # There can be an optional let in assign statement.
 
         if self.token is not None and self.token == Symbol.LASSIGN:
-            if node.name is not NodeType.Name:
+            if node.name not in (NodeType.Name, NodeType.Let):
                 raise LythSyntaxError(node.info, msg=LythError.LEFT_MEMBER_IS_EXPRESSION)
 
             else:
@@ -144,12 +150,17 @@ class Parser:
                 node = Node(token, node, self.expression())
 
         elif self.token is not None and self.token == Symbol.RASSIGN:
-            node = Node(self.token, self.name(), node)
+            token = self.token
+            self.token = None
+            node = Node(token, self.name(), node)
 
             if next(self.lexer) != Symbol.EOL:
                 raise LythSyntaxError(node.info, msg=LythError.GARBAGE_CHARACTERS)
 
-        return node
+        elif let:
+            raise LythSyntaxError(node.info, msg=LythError.LET_ON_EXPRESSION)
+
+        return Node(let, node) if let is not None else node
 
     def expression(self, end: Symbol = Symbol.EOL) -> Node:
         """
@@ -180,6 +191,21 @@ class Parser:
 
         self.token = None
         return node
+
+    def let(self) -> Tuple[Node, Optional[Token]]:
+        """
+        Is there any let keyword that wants to come out?
+
+        Let keyword declares a node to be declared publicly in our tree of
+        symbol. It can be an assign, a class, an enum, a struct etc. or even a
+        list of them.
+        """
+        token = self.lexer()
+        if token == Keyword.LET:
+            return self.expression(), token
+
+        self.token = token
+        return self.expression(), None
 
     def multiplication(self) -> Node:
         """
@@ -222,14 +248,18 @@ class Parser:
         If the token being parsed is not a literal of type value, then it also
         raises an exception saying the symbol is invalid and that it should be
         a literal instead.
+
+        The token may already have been scanned by let. In all cases the
+        current token, even if none, must be consumed, otherwise the expression
+        will evaluate with a literal token.
         """
-        token = self.lexer()
+        token = self.token or self.lexer()
+        self.token = None
 
         if token in (Symbol.EOF, Symbol.EOL):
             raise LythSyntaxError(token.info, msg=LythError.INCOMPLETE_LINE)
 
         elif token == Symbol.LPAREN:
-            print("Detected left parenthesis")
             return self.expression(end=Symbol.RPAREN)
 
         elif token not in (Literal.VALUE, Literal.STRING):
@@ -245,7 +275,7 @@ class Parser:
         to have an end. If it is the case, then an exception saying that it was
         unsuccessful is raised instead.
         """
-        token = self.lexer()
+        token = self.token or self.lexer()
 
         if token in (Symbol.EOF, Symbol.EOL):
             raise LythSyntaxError(token.info, msg=LythError.INCOMPLETE_LINE)

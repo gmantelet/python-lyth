@@ -41,6 +41,24 @@ def test_parser_assign():
     assert str(assign) == "ImmutableAssign(Name(a), Mul(Name(b), Num(2)))"
 
 
+def test_parser_let_assign():
+    """
+    To validate the parser iterates properly over a variable being assigned the
+    result of an expression.
+    """
+    parser = Parser(Lexer(Scanner("let a <- 1 + 2\n")))
+
+    assign = parser()
+    assert assign.name == NodeType.Let
+    assert str(assign) == "Let(MutableAssign(Name(a), Add(Num(1), Num(2))))"
+
+    parser = Parser(Lexer(Scanner("let b * 2 -> a\n")))
+
+    assign = parser()
+    assert assign.name == NodeType.Let
+    assert str(assign) == "Let(ImmutableAssign(Name(a), Mul(Name(b), Num(2))))"
+
+
 def test_parser_addition():
     """
     To validate the parser returns the right AST node.
@@ -162,8 +180,10 @@ def test_parser_invalid_line():
 
 def test_parser_wrong_expression():
     """
-    To validate the parser complains it has two much trailing characters.
+    To validate the parser complains under various situations:
 
+    1. Expression has too much trailing characters.
+    2. Expression has an unexpected let keyword.
     """
     parser = Parser(Lexer(Scanner("1 + 2 + 3 ")))
 
@@ -171,3 +191,10 @@ def test_parser_wrong_expression():
         parser()
 
     assert err.value.msg is LythError.GARBAGE_CHARACTERS
+
+    parser = Parser(Lexer(Scanner("let 1 + 2 + 3\n")))
+
+    with pytest.raises(LythSyntaxError) as err:
+        parser()
+
+    assert err.value.msg is LythError.LET_ON_EXPRESSION

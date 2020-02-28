@@ -103,7 +103,7 @@ class Analyzer:
         """
         raise TypeError(f"Unsupported AST node {node.name.name}")
 
-    def visit(self, node: Node, context: Context = Context.STORE) -> Any:
+    def visit(self, node: Node, context: Context = Context.LOAD) -> Any:
         """
         The entry point of this instance.
 
@@ -146,6 +146,14 @@ class Analyzer:
         else:
             self.table += Name(name, self.scope,
                                SymbolType(Field.UNKNOWN, Field.IMMUTABLE, self.visit(node.right, Context.LOAD)))
+
+    def visit_let(self, node: Node, context: Context) -> Node:
+        """
+        A node that is let requires special treatment (registration on the
+        Merkel tree)
+        """
+        # TODO: This is a bypass. I need a blockchain now.
+        return self.visit(node.value, context)
 
     def visit_mul(self, node: Node, context: Context) -> int:
         """

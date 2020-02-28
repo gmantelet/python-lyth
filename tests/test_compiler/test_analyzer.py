@@ -208,3 +208,20 @@ def test_analyzer_unknown_ast_node(clean_namespace):
 
     with pytest.raises(TypeError):
         analyzer.visit(node)
+
+
+def test_analyzer_let(clean_namespace):
+    """
+    To validate that for now the analyzer is not doing anything upon let
+    keyword
+    """
+    analyzer = Analyzer(Parser(Lexer(Scanner('let a <- 1 + 2\n', '__test__'))))
+
+    assert str(analyzer.table) == "__test__, root"
+
+    analyzer()
+    assert analyzer.table[('a', '__test__')].type.value == 3
+    assert analyzer.table[('a', '__test__')].type.mutable == Field.MUTABLE
+    assert analyzer.table[('a', '__test__')].type.type == Field.UNKNOWN
+    assert analyzer.table.left is None
+    assert str(analyzer.table.right) == "a, __test__"

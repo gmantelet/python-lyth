@@ -78,22 +78,22 @@ class Keyword(_Lexeme):
 
     Use of keywords for naming variables will raise an Exception.
     """
-    # AT = 'at'                  # To refer to an address, and not a value
-    # AND = 'and'                # A logical and operator
-    # FALSE = 'false'            # False value, often equals 0
-    # FOR = 'for'                # The for loop
-    # FROM = 'from'              # From a module to resolve namespace
-    # IF = 'if'                  # The if statement
-    # IMPORT = 'import'          # Import a namespace
-    # IN = 'in'                  # Check in list
-    # IS = 'is'                  # Means the same, for two names, or is at.
-    # LET = 'let'                # Public declaration of this namespace
-    # NONE = 'none'              # The none address
-    # NOT = 'not'                # A logical not operator
-    # OF = 'of'                  # The inheritance operator
-    # OR = 'or'                  # A logical or operator
-    # TRUE = 'true'              # True value, often equals 0
-    # WITH = 'with'              # The with statement, using a context
+    AT = 'at'                  # To refer to an address, and not a value
+    AND = 'and'                # A logical and operator
+    FALSE = 'false'            # False value, often equals 0
+    FOR = 'for'                # The for loop
+    FROM = 'from'              # From a module to resolve namespace
+    IF = 'if'                  # The if statement
+    IMPORT = 'import'          # Import a namespace
+    IN = 'in'                  # Check in list
+    IS = 'is'                  # Means the same, for two names, or is at.
+    LET = 'let'                # Public declaration of this namespace
+    NONE = 'none'              # The none address
+    NOT = 'not'                # A logical not operator
+    OF = 'of'                  # The inheritance operator
+    OR = 'or'                  # A logical or operator
+    TRUE = 'true'              # True value, often equals 0
+    WITH = 'with'              # The with statement, using a context
 
 
 class Literal(_Lexeme):
@@ -190,8 +190,11 @@ class Token:
            returning current token.
         4. Appending an alphanumerical character, or '_', to a string value
            leads to appending that character to the lexeme and returning
-           current token.
-        5. Appending an alphanumerical character, or '_', leading to a literal
+           current token. If the lexeme becomes a lyth keyword, then the token
+           symbol is changed to corresponding keyword.
+        5. Appending an alphanumerical character, or '_', to a keyword causes
+           it to be demoted back to string symbol.
+        6. Appending an alphanumerical character, or '_', leading to a literal
            right after a symbol, without the presence of a space leads to an
            error. Exception, such as '-5' will be corrected by the lexer.
         """
@@ -213,6 +216,12 @@ class Token:
 
         elif (lexeme.isalnum() or lexeme == '_') and self.symbol is Literal.STRING:
             self.lexeme += lexeme
+            self.symbol = Keyword.as_value(self.lexeme) or self.symbol
+            return self
+
+        elif (lexeme.isalnum() or lexeme == '_') and self.symbol in Keyword:
+            self.lexeme += lexeme
+            self.symbol = Literal.STRING
             return self
 
         elif (lexeme.isalnum() or lexeme == '_') and self.symbol in Symbol:
