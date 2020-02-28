@@ -93,7 +93,7 @@ def test_multiple_spaces():
     """
     Multiple spaces are skipped
     """
-    lexer = Lexer(Scanner("1  +=  2  \n"))
+    lexer = Lexer(Scanner("1  //  2  \n"))
 
     token = next(lexer)
     assert token.info.offset == 0
@@ -101,15 +101,15 @@ def test_multiple_spaces():
     assert token.lexeme == 1
     assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.info.line == "1  +=  2  "
+    assert token.info.line == "1  //  2  "
 
     token = next(lexer)
     assert token.info.offset == 3
     assert token.info.filename == "<stdin>"
-    assert token.lexeme == '+='
+    assert token.lexeme == '//'
     assert token.info.lineno == 0
-    assert token.symbol == Symbol.ADDAUG
-    assert token.info.line == "1  +=  2  "
+    assert token.symbol == Symbol.FLOOR
+    assert token.info.line == "1  //  2  "
 
     token = next(lexer)
     assert token.info.offset == 7
@@ -117,7 +117,7 @@ def test_multiple_spaces():
     assert token.lexeme == 2
     assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.info.line == "1  +=  2  "
+    assert token.info.line == "1  //  2  "
 
     token = next(lexer)
     assert token.info.offset == 9
@@ -125,7 +125,7 @@ def test_multiple_spaces():
     assert token.lexeme == '\n'
     assert token.info.lineno == 0
     assert token.symbol == Symbol.EOL
-    assert token.info.line == "1  +=  2  "
+    assert token.info.line == "1  //  2  "
 
     token = next(lexer)
     assert token.info.offset == -1
@@ -197,7 +197,7 @@ def test_missing_space_after_operator():
     assert token.symbol == Literal.VALUE
     assert token.info.line == "1  +2  "
 
-    lexer = Lexer(Scanner("1  +=2  \n"))
+    lexer = Lexer(Scanner("1  //2  \n"))
 
     token = next(lexer)
     assert token.info.offset == 0
@@ -205,7 +205,7 @@ def test_missing_space_after_operator():
     assert token.lexeme == 1
     assert token.info.lineno == 0
     assert token.symbol == Literal.VALUE
-    assert token.info.line == "1  +=2  "
+    assert token.info.line == "1  //2  "
 
     with pytest.raises(LythSyntaxError) as err:
         token = next(lexer)
@@ -214,4 +214,4 @@ def test_missing_space_after_operator():
     assert err.value.filename == "<stdin>"
     assert err.value.lineno == 0
     assert err.value.offset == 3
-    assert err.value.line == "1  +=2  "
+    assert err.value.line == "1  //2  "

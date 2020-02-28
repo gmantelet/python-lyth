@@ -20,11 +20,15 @@ class LythError(Enum):
     GARBAGE_CHARACTERS = "Garbage characters ending line"
     INCOMPLETE_LINE = "Incomplete line"
     INVALID_CHARACTER = "Invalid character"
+    LEFT_MEMBER_IS_EXPRESSION = "Left member of assignment should not be an expression"
     LITERAL_EXPECTED = "Literal expected"
     MISSING_EMPTY_LINE = "Missing empty line right before end of file"
     MISSING_SPACE_BEFORE_OPERATOR = "Missing space before operator"
     MISSING_SPACE_AFTER_OPERATOR = "Missing space after operator"
+    NAME_EXPECTED = "Variable name expected"
+    REASSIGN_IMMUTABLE = "Reassigning an immutable variable"
     SYNTAX_ERROR = "Invalid syntax"
+    VARIABLE_REFERENCED_BEFORE_ASSIGNMENT = "Variable referenced before assignment"
 
 
 class LythSyntaxError(Exception):

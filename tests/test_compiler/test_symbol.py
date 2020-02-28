@@ -6,7 +6,14 @@ from lyth.compiler.symbol import SymbolType
 from lyth.compiler.symbol import TraversalMode
 
 
-def test_symbol_integrity():
+@pytest.fixture
+def clean_namespace(scope='module'):
+    while Name.roots:
+        root = Name.roots.pop()
+        del root[(root.name, root.scope)]
+
+
+def test_symbol_integrity(clean_namespace):
     """
     To validate I am warned that I try to change immutable attributes on
     symbols
@@ -50,7 +57,7 @@ def test_symbol_integrity():
         sym <= 1
 
 
-def test_rich_comparison():
+def test_rich_comparison(clean_namespace):
     """
     To validate comparison operators acts on the name and scope of symbols as
     expected.
@@ -75,7 +82,7 @@ def test_rich_comparison():
     assert sym6 >= sym5
 
 
-def test_symbol_roots():
+def test_symbol_roots(clean_namespace):
     """
     To validate the analyzer can handle its root node as expected
     """
@@ -94,7 +101,7 @@ def test_symbol_roots():
     assert sym3 in Name.roots
 
 
-def test_symbol_add():
+def test_symbol_add(clean_namespace):
     """
     To validate binary tree insertion and traversal work as expected.
     """
@@ -108,6 +115,8 @@ def test_symbol_add():
     assert sym1.right.left is None
     assert sym1.right.right.name == 'c'
     assert sym1.right.right.scope == 'a'
+    assert str(sym1) == "b, b"
+    assert repr(sym1) == "b, b: unknown (unknown, unknown)"
 
     sym1 += Name('b', 'b', SymbolType())
     assert sym1.left is None
@@ -222,3 +231,86 @@ def test_symbol_add():
 
     sym1 += Name('a', 'a', SymbolType())
     assert sym1[('a', 'a')] is sym1.left.left
+
+
+def test_symbol_as_dict(clean_namespace):
+    """
+    To validate the use of __getitem__, __setitem__, __delitem__
+    """
+    sym1 = Name.root('a', 'a', SymbolType())
+
+    assert sym1[('a', 'a')] is sym1
+    assert sym1[('a')] == [sym1]
+
+    with pytest.raises(KeyError):
+        _ = sym1[('a', 'e')]
+
+    assert sym1[('b')] == []
+
+    with pytest.raises(ValueError):
+        _ = sym1[1]
+
+    sym1[('a', 'b')] = SymbolType()
+    assert sym1[('a', 'b')].name == 'a'
+    assert sym1[('a', 'b')].scope == 'b'
+
+    with pytest.raises(ValueError):
+        sym1['a'] = SymbolType()
+
+    with pytest.raises(ValueError):
+        sym1[1] = SymbolType()
+
+    sym1[('a', 'c')] = SymbolType()
+    assert sym1[('a', 'c')].name == 'a'
+    assert sym1[('a', 'c')].scope == 'c'
+
+    sym1[('a', 'ab')] = SymbolType()
+    del sym1[('a', 'ab')]
+
+    del sym1[('a', 'b')]
+
+    with pytest.raises(KeyError):
+        _ = sym1[('a', 'b')]
+
+    with pytest.raises(KeyError):
+        _ = sym1[('a', 'c')]
+
+    with pytest.raises(ValueError):
+        del sym1['a']
+
+    with pytest.raises(ValueError):
+        del sym1[1]
+
+    del sym1[('a', 'a')]
+    assert Name.roots == set()
+
+    sym2 = Name('b', 'b', SymbolType())
+    sym2[('a', 'b')] = SymbolType()
+    sym2[('a', 'a')] = SymbolType()
+    sym2[('a', 'c')] = SymbolType()
+
+    del sym2[('a', 'b')]
+    with pytest.raises(KeyError):
+        _ = sym1[('a', 'c')]
+
+
+def test_get_parent(clean_namespace):
+    """
+    To test we get the right parent node.
+    """
+    sym1 = Name('b', 'b', SymbolType())
+    sym1 += Name('a', 'b', SymbolType())
+    sym1 += Name('a', 'a', SymbolType())
+    sym1 += Name('a', 'c', SymbolType())
+    sym1 += Name('b', 'd', SymbolType())
+    sym1 += Name('b', 'c', SymbolType())
+    sym1 += Name('b', 'e', SymbolType())
+
+    assert sym1.get_parent(sym1[('b', 'e')]) == sym1[('b', 'd')]
+    assert sym1.get_parent(sym1[('b', 'c')]) == sym1[('b', 'd')]
+    assert sym1.get_parent(sym1[('b', 'd')]) == sym1[('b', 'b')]
+    assert sym1.get_parent(sym1[('a', 'a')]) == sym1[('a', 'b')]
+    assert sym1.get_parent(sym1[('a', 'c')]) == sym1[('a', 'b')]
+    assert sym1.get_parent(sym1[('a', 'b')]) == sym1[('b', 'b')]
+    assert sym1.get_parent(sym1) is None
+    assert sym1.get_parent(Name('c', 'c', SymbolType())) is None

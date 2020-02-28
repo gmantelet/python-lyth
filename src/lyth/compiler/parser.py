@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Generator
 
 from lyth.compiler.ast import Node
+from lyth.compiler.ast import NodeType
 from lyth.compiler.error import LythError
 from lyth.compiler.error import LythSyntaxError
 from lyth.compiler.lexer import Lexer
@@ -63,12 +64,11 @@ class Parser:
 
     def _next(self) -> Node:
         """
-        Looking for an expression, starting with addition first, which has no
-        preemption.
+        Looking for an assignment, starting with an expression first.
         """
         while True:
             try:
-                node = self.expression()
+                node = self.assign()
 
             except StopIteration:
                 break
@@ -110,6 +110,47 @@ class Parser:
 
         return node
 
+    def assign(self) -> Node:
+        """
+        Based on a left-member expression, check that we are dealing with an
+        assign, be mutable or immutable.
+
+        This method first looks for an expression. If the expressions exits,
+        then it has likely stored a token. We match this token against an
+        assign operator ('<-' or '->'). If the token does not match, then we
+        return the expression node.
+
+        The expression expects to fill out the line, so the next token should
+        be something like EOL. If it is not, but it is an assign operator,
+        either '<-' or '->' then this method evaluates an assignment instead.
+
+        If the operator is a left assign, a variable, that must be a name, and
+        not an expressed is being assigned an expression (or a literal).
+
+        If the operator is a right assign, then an expression (or a literal) is
+        assigned to an immutable name. If name fails, for instance there is an
+        expression, or if the token after is not an end of line, then an error
+        is returned.
+        """
+        node = self.expression()
+
+        if self.token is not None and self.token == Symbol.LASSIGN:
+            if node.name is not NodeType.Name:
+                raise LythSyntaxError(node.info, msg=LythError.LEFT_MEMBER_IS_EXPRESSION)
+
+            else:
+                token = self.token
+                self.token = None
+                node = Node(token, node, self.expression())
+
+        elif self.token is not None and self.token == Symbol.RASSIGN:
+            node = Node(self.token, self.name(), node)
+
+            if next(self.lexer) != Symbol.EOL:
+                raise LythSyntaxError(node.info, msg=LythError.GARBAGE_CHARACTERS)
+
+        return node
+
     def expression(self, end: Symbol = Symbol.EOL) -> Node:
         """
         Looking for a line that could lead to an expression, that is, a series
@@ -117,6 +158,11 @@ class Parser:
 
         There should be one expression per line, or one expression per pair of
         parentheses. This is why this method is not a while loop.
+
+        Expression raises an Exception if it detects trailing characters. The
+        exception however, is bypassed in case of an assignment. In this case,
+        the expression returns the node, and the current assignment token for
+        the assign method to run.
 
         The end parameter determines the token the expression expects to stop.
         In some cases, expression is started by an opening parenthesis, then
@@ -126,7 +172,10 @@ class Parser:
         """
         node = self.addition()
 
-        if self.token is not None and self.token.symbol is not end:
+        if self.token in (Symbol.LASSIGN, Symbol.RASSIGN):
+            return node
+
+        elif self.token is not None and self.token.symbol is not end:
             raise LythSyntaxError(node.info, msg=LythError.GARBAGE_CHARACTERS)
 
         self.token = None
@@ -148,7 +197,7 @@ class Parser:
         while True:
             token = self.token or next(self.lexer)
 
-            if token in (Symbol.MUL, Symbol.DIV, Symbol.CEIL):
+            if token in (Symbol.MUL, Symbol.DIV, Symbol.FLOOR):
                 self.token = None
                 node = Node(token, node, self.literal())
 
@@ -185,5 +234,23 @@ class Parser:
 
         elif token not in (Literal.VALUE, Literal.STRING):
             raise LythSyntaxError(token.info, msg=LythError.LITERAL_EXPECTED)
+
+        return Node(token)
+
+    def name(self) -> Node:
+        """
+        Looking for a name token.
+
+        Literal does not expect the line to be terminated, or the source code
+        to have an end. If it is the case, then an exception saying that it was
+        unsuccessful is raised instead.
+        """
+        token = self.lexer()
+
+        if token in (Symbol.EOF, Symbol.EOL):
+            raise LythSyntaxError(token.info, msg=LythError.INCOMPLETE_LINE)
+
+        elif token != Literal.STRING:
+            raise LythSyntaxError(token.info, msg=LythError.NAME_EXPECTED)
 
         return Node(token)

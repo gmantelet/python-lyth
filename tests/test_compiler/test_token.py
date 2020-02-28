@@ -60,13 +60,13 @@ def test_symbol():
     """
     To validate we get a token catching symbols are expected.
     """
-    token = Token("+", TokenInfo("<stdin>", 0, 1, " +="))
+    token = Token("+", TokenInfo("<stdin>", 0, 1, " ++"))
     assert token.info.offset == 1
     assert token.info.filename == "<stdin>"
     assert token.lexeme == "+"
     assert token.info.lineno == 0
     assert token.symbol == Symbol.ADD
-    assert token.info.line == " +="
+    assert token.info.line == " ++"
 
     token = token()
     assert token.info.offset == 1
@@ -74,42 +74,42 @@ def test_symbol():
     assert token.lexeme == "+"
     assert token.info.lineno == 0
     assert token.symbol == Symbol.ADD
-    assert token.info.line == " +="
+    assert token.info.line == " ++"
 
-    token += "="
+    token += "+"
     assert token.info.offset == 1
     assert token.info.filename == "<stdin>"
-    assert token.lexeme == "+="
+    assert token.lexeme == "++"
     assert token.info.lineno == 0
-    assert token.symbol == Symbol.ADDAUG
-    assert token.info.line == " +="
+    assert token.symbol == Symbol.INC
+    assert token.info.line == " ++"
 
     token = token()
     assert token.info.offset == 1
     assert token.info.filename == "<stdin>"
-    assert token.lexeme == "+="
+    assert token.lexeme == "++"
     assert token.info.lineno == 0
-    assert token.symbol == Symbol.ADDAUG
-    assert token.info.line == " +="
+    assert token.symbol == Symbol.INC
+    assert token.info.line == " ++"
 
     with pytest.raises(LythSyntaxError) as err:
         token += "5"
 
     assert token.info.offset == 1
     assert token.info.filename == "<stdin>"
-    assert token.lexeme == "+="
+    assert token.lexeme == "++"
     assert token.info.lineno == 0
-    assert token.symbol == Symbol.ADDAUG
-    assert token.info.line == " +="
+    assert token.symbol == Symbol.INC
+    assert token.info.line == " ++"
 
     assert err.value.msg is LythError.MISSING_SPACE_AFTER_OPERATOR
     assert err.value.filename == "<stdin>"
     assert err.value.lineno == 0
     assert err.value.offset == 1
-    assert err.value.line == " +="
+    assert err.value.line == " ++"
 
-    assert repr(token) == "Token(ADDAUG, '+=', 0, 1)"
-    assert str(token) == "ADDAUG: '+='"
+    assert repr(token) == "Token(INC, '++', 0, 1)"
+    assert str(token) == "INC: '++'"
 
 
 def test_bad_symbol():

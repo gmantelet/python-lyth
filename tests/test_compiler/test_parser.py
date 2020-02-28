@@ -23,6 +23,24 @@ def test_parser_expression():
     assert str(i) == "Noop()"
 
 
+def test_parser_assign():
+    """
+    To validate the parser iterates properly over a variable being assigned the
+    result of an expression.
+    """
+    parser = Parser(Lexer(Scanner("a <- 1 + 2\n")))
+
+    assign = parser()
+    assert assign.name == NodeType.MutableAssign
+    assert str(assign) == "MutableAssign(Name(a), Add(Num(1), Num(2)))"
+
+    parser = Parser(Lexer(Scanner("b * 2 -> a\n")))
+
+    assign = parser()
+    assert assign.name == NodeType.ImmutableAssign
+    assert str(assign) == "ImmutableAssign(Name(a), Mul(Name(b), Num(2)))"
+
+
 def test_parser_addition():
     """
     To validate the parser returns the right AST node.

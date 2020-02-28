@@ -20,7 +20,10 @@ class NodeType(Enum):
     visit.
     """
     Add = Symbol.ADD
+    Div = Symbol.DIV
+    ImmutableAssign = Symbol.RASSIGN
     Mul = Symbol.MUL
+    MutableAssign = Symbol.LASSIGN
     Name = Literal.STRING
     Noop = None
     Num = Literal.VALUE

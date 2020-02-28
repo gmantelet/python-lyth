@@ -4,6 +4,7 @@ This module defines the symbol table.
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 from typing import Generator
 from typing import List
 from typing import Optional
@@ -58,6 +59,14 @@ class SymbolType:
         self.type = type
         self.mutable = mutable
         self.value = value
+
+    def __str__(self) -> str:
+        """
+        Returns a representation of itself
+        """
+        return (f"{self.type.value if self.type is Field.UNKNOWN else self.type} "
+                f"({self.mutable.value}, "
+                f"{self.value.value if self.value is Field.UNKNOWN else self.value})")
 
 
 class Name:
@@ -140,6 +149,31 @@ class Name:
         else:
             return False
 
+    def __delitem__(self, info: Tuple[str, str]) -> None:
+        """
+        Delete a node from this symbol table. It can be the root node itself.
+
+        When it deletes a node, delitem also deletes the children nodes of this
+        node.
+        """
+        if not isinstance(info, tuple):
+            raise ValueError(f"__delitem__ accepts info as tuple of 'str' (<name, scope>), not {type(info)}")
+
+        node = self[info]  # Can raise an exception.
+        for child in node.next(TraversalMode.POST_ORDER):
+            child.left = None  # Garbarge collection!
+            child.right = None  # Garbarge collection!
+
+        parent = self.get_parent(node)
+        if parent is not None:
+            if parent.left and node == parent.left:
+                parent.left = None
+            else:  # elif parent.right and node == parent.right:
+                parent.right = None
+
+        if node in self.__class__.roots:
+            self.__class__.roots.remove(node)
+
     def __eq__(self, other: Name) -> bool:
         """
         Are the two objects equivalent?
@@ -177,17 +211,17 @@ class Name:
             if other == self:
                 return self
 
-            elif other == self.right:
-                return self.right
-
-            elif other == self.left:
+            elif self.left and self.left == other:
                 return self.left
 
-            elif other in self.right:
-                return self.right[info]
-
-            elif other in self.left:
+            elif self.left and other in self.left:
                 return self.left[info]
+
+            elif self.right and self.right == other:
+                return self.right
+
+            elif self.right and other in self.right:
+                return self.right[info]
 
             else:
                 raise KeyError(f"({''.join(info)}) not in this node ({self})")
@@ -197,7 +231,7 @@ class Name:
 
         else:
             raise ValueError(f"__getitem__ accepts info as name of 'str', or "
-                             f"<name, info> as tuple of 'str', not {type(info)}")
+                             f"<name, scope> as tuple of 'str', not {type(info)}")
 
     def __gt__(self, other: Name) -> bool:
         """
@@ -252,6 +286,60 @@ class Name:
             raise ValueError(f"Cannot compare {self.__class__.__name__} with {type(other)}")
 
         return self.__name != other.__name or self.__scope != other.__scope
+
+    def __repr__(self) -> str:
+        """
+        Returns the representation of this node
+        """
+        return f"{self!s}: {self.type!s}"
+
+    def __setitem__(self, info: Tuple[str, str], type_) -> None:
+        """
+        Insert a new node in tree by key rather than by node.
+        """
+        if not isinstance(info, tuple):
+            raise ValueError(f"__setitem__ accepts info as tuple of 'str' (<name, scope>), not {type(info)}")
+
+        self += Name(*info, type_)
+
+    def __str__(self) -> str:
+        """
+        Returns the key of this node
+        """
+        return f"{self.__name}, {self.__scope}"
+
+    def get(self, info: Union[str, Tuple[str, str]], default: Any) -> Any:
+        """
+        Wrapper that returns a default object or type if a node cannot be
+        located within that tree.
+        """
+        try:
+            return self.__getitem__(info)
+
+        except KeyError:
+            return default
+
+    def get_parent(self, other: Name) -> Optional[Name]:
+        """
+        Retrieves the parent of the node provided as argument
+        """
+        if other == self:
+            return None
+
+        elif self.left and self.left == other:
+            return self
+
+        elif self.left and other in self.left:
+            return self.left.get_parent(other)
+
+        elif self.right and self.right == other:
+            return self
+
+        elif self.right and other in self.right:
+            return self.right.get_parent(other)
+
+        else:
+            return None
 
     @property
     def name(self):

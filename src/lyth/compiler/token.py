@@ -35,48 +35,41 @@ class Symbol(_Lexeme):
     names or values, and is the end of file itself.
     """
     ADD = '+'                  # Addition symbol for expressions
-    ADDAUG = '+='              # Augmented addition (idiom for a = a + x)
-    # AND = '&'                  # Binary mask
-    # ANDAUG = '&='              # Augmented assignment (idiom for a = a & x)
-    CEIL = '//'                # Also known as integer division
-    # CHAR = "'"                 # Desginates an ASCII translation of an integer
-    # COLON = ':'                # Beginning of a block of code
-    # COMMA = ','                # Delimiter for a set of parameters
-    # COMMENT = '#'              # Designates a comment section
-    # COMP = '=='                # Testing equality
-    # DEC = '--'                 # Decrementing (idiom for a = a - 1)
-    # DIFF = '!='                # Different than, not equal than
+    AND = '&'                  # Binary mask
+    CHAR = "'"                 # Desginates an ASCII translation of an integer
+    COLON = ':'                # Beginning of a block of code
+    COMMA = ','                # Delimiter for a set of parameters
+    COMMENT = '#'              # Designates a comment section
+    DEC = '--'                 # Decrementing (idiom for a = a - 1)
+    DIFF = '!='                # Different than, not equal than
     DIV = '/'                  # Also known as float division
-    # DOC = '"""'                # Docstring
-    # DOT = '.'                  # Access to an attribute (or design self)
+    DOC = '"""'                # Docstring
+    DOT = '.'                  # Access to an attribute (or design self)
     EOF = None                 # End of file. StopIteration after this token
     EOL = "\n"                 # End of line.
-    # EQ = '='                   # Assigning a mutable value
-    # FLIP = '!'                 # Bit flip operator
-    # GT = '>'                   # Testing greater than
-    # GTE = '>='                 # Testing greater or equal than
-    # INC = '++'                 # Incrementing (idiom for a = a + 1)
-    # INDENT = '  '              # Multiple of two spaces at column 0
-    # MOD = '%'                  # Modulo, the remainder of integer division
+    EQ = '='                   # Comparison operator
+    FLIP = '!'                 # Bit flip operator
+    FLOOR = '//'               # Also known as integer division
+    GT = '>'                   # Testing greater than
+    GTE = '>='                 # Testing greater or equal than
+    INC = '++'                 # Incrementing (idiom for a = a + 1)
+    INDENT = '  '              # Multiple of two spaces at column 0
+    MOD = '%'                  # Modulo, the remainder of integer division
     MUL = '*'                  # Multiplication symbol for expressions
-    LASSIGN = '<-'              # Assigning a value to its left member
+    LASSIGN = '<-'             # Assigning a value to its left member
     LPAREN = '('               # Left parenthesis
-    # LSHIFT = '<<'              # Left shift operator
-    # LSHIFTAUG = '>>='          # Augmented shift (idiom for a = a << x)
-    # LT = '<'                   # Testing less than
-    # LTE = '<='                 # Testing greater or equal than
-    # OR = '|'                   # Binary or operator
-    # ORAUG = '|='               # Augmented or (idiom for a = a | x)
-    # QUOTE = '"'                # Designates a string
-    # RANGE = '..'               # Range operator, or bit space
-    RASSIGN = '->'              # Assigning a value to its right member
+    LSHIFT = '<<'              # Left shift operator
+    LT = '<'                   # Testing less than
+    LTE = '<='                 # Testing greater or equal than
+    OR = '|'                   # Binary or operator
+    QUOTE = '"'                # Designates a string
+    RANGE = '..'               # Range operator, or bit space
+    RASSIGN = '->'             # Assigning a value to its right member
     RPAREN = ')'               # Right parenthesis
-    # RSHIFT = '>>'              # Right shif operator
-    # RSHIFTAUG = '>>='          # Augmented shift (idiom for a = a >> x)
+    RSHIFT = '>>'              # Right shif operator
     SUB = '-'                  # Substraction symbol for expressions
-    # SUBAUG = '-='              # Augmented substraction (idiom for a = a - x)
-    # XOR = '^'                  # Exclusive or operator
-    # XORAUG = '^='              # Augmented addition (idiom for a = a ^ x)
+    UNKNOWN = '?'              # The value is unknown at declaration
+    XOR = '^'                  # Exclusive or operator
 
 
 class Keyword(_Lexeme):

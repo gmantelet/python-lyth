@@ -33,6 +33,13 @@ class Scanner:
         self.offset: int = -1
         self._stream: Generator[str, None, None] = self.next()
 
+    def __add__(self, other: str) -> Scanner:
+        """
+        Append new string to the source being scanned.
+        """
+        self.data += other
+        return self
+
     def __call__(self) -> str:
         """
         Retrieve the next character in source code.
