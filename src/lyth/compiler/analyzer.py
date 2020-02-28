@@ -118,16 +118,16 @@ class Analyzer:
         """
         A node asking for an addition requires a result
         """
-        left = self.visit(node.left, context)
-        right = self.visit(node.right, context)
+        left = self.visit(node.left, Context.LOAD)
+        right = self.visit(node.right, Context.LOAD)
         return left + right
 
     def visit_div(self, node: Node, context: Context) -> float:
         """
         A node asking for an addition requires a result
         """
-        left = self.visit(node.left, context)
-        right = self.visit(node.right, context)
+        left = self.visit(node.left, Context.LOAD)
+        right = self.visit(node.right, Context.LOAD)
         return left / right
 
     def visit_immutableassign(self, node, context: Context) -> None:
@@ -151,8 +151,8 @@ class Analyzer:
         """
         A node asking for an addition requires a result
         """
-        left = self.visit(node.left, context)
-        right = self.visit(node.right, context)
+        left = self.visit(node.left, Context.LOAD)
+        right = self.visit(node.right, Context.LOAD)
         return left * right
 
     def visit_mutableassign(self, node, context: Context) -> None:
@@ -207,6 +207,6 @@ class Analyzer:
         """
         A node asking for an addition requires a result
         """
-        left = self.visit(node.left, context)
-        right = self.visit(node.right, context)
+        left = self.visit(node.left, Context.LOAD)
+        right = self.visit(node.right, Context.LOAD)
         return left - right

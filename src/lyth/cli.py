@@ -4,8 +4,9 @@ Module that contains the command line application.
 import sys
 import traceback
 
+from lyth.compiler.analyzer import Analyzer
 from lyth.compiler.error import LythSyntaxError
-from lyth.compiler.interpreter import Interpreter
+# from lyth.compiler.interpreter import Interpreter
 from lyth.compiler.lexer import Lexer
 from lyth.compiler.parser import Parser
 from lyth.compiler.scanner import Scanner
@@ -19,7 +20,7 @@ def main(argv=sys.argv):
     settings = fetch(argv[1:])
     error = 0
 
-    interpreter = Interpreter()
+    # interpreter = Interpreter()
 
     count = 0
 
@@ -27,9 +28,14 @@ def main(argv=sys.argv):
         try:
             scanner = Scanner(input('>>> ') + "\n")
             parser = Parser(Lexer(scanner))
+            analyzer = Analyzer(parser)
 
             cmd = next(parser)
-            print(interpreter.visit(cmd))
+            # print(interpreter.visit(cmd))
+
+            ret = analyzer.visit(cmd)
+            if ret is not None:
+                print(ret)
 
         except LythSyntaxError as e:
             print(e)
