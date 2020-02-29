@@ -215,3 +215,47 @@ def test_missing_space_after_operator():
     assert err.value.lineno == 0
     assert err.value.offset == 3
     assert err.value.line == "1  //2  "
+
+
+def test_indent():
+    """
+    To validate the lexer produces the right indent token.
+    """
+    lexer = Lexer(Scanner("  1 + 2\n"))
+
+    token = next(lexer)
+    assert token.info.offset == 0
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == 1
+    assert token.info.lineno == 0
+    assert token.symbol == Symbol.INDENT
+    assert token.info.line == "  1 + 2"
+
+    token = next(lexer)
+    assert token.info.offset == 2
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == 1
+    assert token.info.lineno == 0
+    assert token.symbol == Literal.VALUE
+    assert token.info.line == "  1 + 2"
+
+    lexer = Lexer(Scanner("    1 + 2\n"))
+
+    token = next(lexer)
+    assert token.info.offset == 0
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == 2
+    assert token.info.lineno == 0
+    assert token.symbol == Symbol.INDENT
+    assert token.info.line == "    1 + 2"
+
+    lexer = Lexer(Scanner("   1 + 2\n"))
+
+    with pytest.raises(LythSyntaxError) as err:
+        token = next(lexer)
+
+    assert err.value.msg is LythError.UNEVEN_INDENT
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 0
+    assert err.value.offset == 0
+    assert err.value.line == "   1 + 2"

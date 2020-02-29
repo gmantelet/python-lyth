@@ -74,13 +74,19 @@ class Lexer:
         There are multiple case to consider here.
         1. A space is detected and a token is being built. The generator yields
            the token, effectively stopping its construction.
-        2. If the space is a feed line character, the generator yields a new
+        2. A space is detected and an indent token is being built. The
+           generator appends the space to this indent.
+        3. If the space is a feed line character, the generator yields a new
            EOL token right after.
-        3. Other spaces following are ignored, looping through the while loop
+        4. If the space is in first column, this is the beginning of an indent
+           and a corresponding token is instantiated.
+        5. Other spaces following are ignored, looping through the while loop
            to retrieve another character (and so on)
-        4. If it is not a space and no token is present, then we start creating
+        6. If it is not a space and it ends an indent, the generator yields
+           first the indent.
+        7. If it is not a space and no token is present, then we start creating
            one.
-        5. If it is not a space and a token is present, then we continue the
+        8. If it is not a space and a token is present, then we continue the
            construction of the current token.
 
         When the end of file is reached:
@@ -105,17 +111,61 @@ class Lexer:
                 char = self.scanner()
 
                 if char.isspace():
-                    if token is not None:
+                    #
+                    # 1. A space is detected, and a token is being built.
+                    #
+                    if token is not None and token != Symbol.INDENT:
                         yield token()
 
+                    #
+                    # 2. A space is detected, and an indent token is being
+                    #    built.
+                    #
+                    elif token is not None and token == Symbol.INDENT:
+                        token += ' '
+                        continue
+
+                    #
+                    # 3. If the space is a feed line character, the generator
+                    #    inserts a new EOL token.
+                    #
                     if char == '\n':
                         yield Token('\n', self.scanner)
 
                     token = None
 
-                elif token is None:
+                    #
+                    # 4. If the space is in the first column, this is the
+                    #    beginning of an indent.
+                    #
+                    if self.scanner.offset == 0:
+                        token = Token(' ', self.scanner)
+                        continue
+
+                    #
+                    # 5. Other spaces following are ignored.
+                    #
+                    continue
+
+                #
+                # 6. If it is not a space and it ends an indent, the generator
+                #    returns the indent first
+                #
+                if token is not None and token == Symbol.INDENT:
+                    yield token()
+                    token = None
+
+                #
+                # 7. If it is not a space and no token is present, then we
+                #    start defining a new token
+                #
+                if token is None:
                     token = Token(char, self.scanner)
 
+                #
+                # 8. If it is not a space and a token is present, then we
+                #    append the character to the token.
+                #
                 else:
                     token += char
 
@@ -123,8 +173,7 @@ class Lexer:
                 if token is not None and (token.symbol is not Symbol.EOL or token.lineno != 0):
                     raise LythSyntaxError(token.info, msg=LythError.MISSING_EMPTY_LINE) from None
 
-                token = Token(None, self.scanner)
-                yield token
+                yield Token(None, self.scanner)
                 break
 
             except LythSyntaxError as error:

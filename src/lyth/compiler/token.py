@@ -53,7 +53,7 @@ class Symbol(_Lexeme):
     GT = '>'                   # Testing greater than
     GTE = '>='                 # Testing greater or equal than
     INC = '++'                 # Incrementing (idiom for a = a + 1)
-    INDENT = '  '              # Multiple of two spaces at column 0
+    INDENT = ' '               # Multiple of two spaces at column 0
     MOD = '%'                  # Modulo, the remainder of integer division
     MUL = '*'                  # Multiplication symbol for expressions
     LASSIGN = '<-'             # Assigning a value to its left member
@@ -164,9 +164,18 @@ class Token:
         In some cases it is simple to convert the string of the lexeme to the
         right type once it is finished, rather than letting the analyzer does
         it.
+
+        If the token is an indent, the lexeme is the number of indents. The
+        number of indents must be even, or an exception is raised.
         """
         if self.symbol is Literal.VALUE:
             self.lexeme = int(self.lexeme)
+
+        elif self.symbol is Symbol.INDENT:
+            if len(self.lexeme) % 2:
+                raise LythSyntaxError(self.info, msg=LythError.UNEVEN_INDENT)
+
+            self.lexeme = len(self.lexeme) / 2
 
         return self
 
@@ -181,23 +190,29 @@ class Token:
         become an assignment if '-' is the next character being scanned.
 
         The methodology is the following:
-        1. If the new lexeme appended to current lexeme leads to a new symbol,
+        1. Appending space to an indent token leads to an indent token with a
+           lexeme of incremented size.
+        2. If the new lexeme appended to current lexeme leads to a new symbol,
            update symbol and new lexeme, and return this instance.
-        2. If the new literal would be a symbol appended to a literal, there is
+        3. If the new literal would be a symbol appended to a literal, there is
            clearly a missing space. Exception, such as '5!' will be corrected
            by the lexer.
-        3. Appending a digit to a literal leads to appending the lexeme and
+        4. Appending a digit to a literal leads to appending the lexeme and
            returning current token.
-        4. Appending an alphanumerical character, or '_', to a string value
+        5. Appending an alphanumerical character, or '_', to a string value
            leads to appending that character to the lexeme and returning
            current token. If the lexeme becomes a lyth keyword, then the token
            symbol is changed to corresponding keyword.
-        5. Appending an alphanumerical character, or '_', to a keyword causes
+        6. Appending an alphanumerical character, or '_', to a keyword causes
            it to be demoted back to string symbol.
-        6. Appending an alphanumerical character, or '_', leading to a literal
+        7. Appending an alphanumerical character, or '_', leading to a literal
            right after a symbol, without the presence of a space leads to an
            error. Exception, such as '-5' will be corrected by the lexer.
         """
+        if self.symbol is Symbol.INDENT and lexeme == ' ':
+            self.lexeme += lexeme
+            return self
+
         symbol = Symbol.as_value(self.lexeme + lexeme)
 
         if symbol is not None:

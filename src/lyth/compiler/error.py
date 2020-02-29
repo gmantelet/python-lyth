@@ -29,6 +29,7 @@ class LythError(Enum):
     NAME_EXPECTED = "Variable name expected"
     REASSIGN_IMMUTABLE = "Reassigning an immutable variable"
     SYNTAX_ERROR = "Invalid syntax"
+    UNEVEN_INDENT = "Uneven indent"
     VARIABLE_REFERENCED_BEFORE_ASSIGNMENT = "Variable referenced before assignment"
 
 
