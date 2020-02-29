@@ -28,9 +28,9 @@ Overview
     :alt: Requirements Status
     :target: https://requires.io/github/gmantelet/python-lyth/requirements/?branch=master
 
-.. |coveralls| image:: https://coveralls.io/repos/github/gmantelet/python-lyth/badge.svg?branch=master
+.. |coveralls| image:: https://coveralls.io/repos/github/gmantelet/python-lyth/badge.svg
     :alt: Coverage Status
-    :target: https://coveralls.io/github/gmantelet/python-lyth?branch=master
+    :target: https://coveralls.io/github/gmantelet/python-lyth
 
 .. |codecov| image:: https://codecov.io/github/gmantelet/python-lyth/coverage.svg?branch=master
     :alt: Coverage Status
