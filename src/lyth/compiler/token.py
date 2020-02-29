@@ -175,7 +175,7 @@ class Token:
             if len(self.lexeme) % 2:
                 raise LythSyntaxError(self.info, msg=LythError.UNEVEN_INDENT)
 
-            self.lexeme = len(self.lexeme) / 2
+            self.lexeme = len(self.lexeme) // 2
 
         return self
 

@@ -34,6 +34,7 @@ class Parser:
         It can be anything that is an iterable, a generator that eventually
         raises StopIteration, as long as it returns tokens.
         """
+        self.indent = 0
         self.lexer: Lexer = lexer
         self.token: Token = None
         self._stream: Generator[Token, None, None] = self._next()
@@ -158,7 +159,7 @@ class Parser:
                 raise LythSyntaxError(node.info, msg=LythError.GARBAGE_CHARACTERS)
 
         elif let:
-            raise LythSyntaxError(node.info, msg=LythError.LET_ON_EXPRESSION)
+            raise LythSyntaxError(let.info, msg=LythError.LET_ON_EXPRESSION)
 
         return Node(let, node) if let is not None else node
 
@@ -202,10 +203,82 @@ class Parser:
         """
         token = self.lexer()
         if token == Keyword.LET:
+
+            next_token = self.lexer()
+
+            #
+            # 1. Multiple statements let
+            #
+            if next_token == Symbol.COLON:
+                statements = []
+
+                if self.lexer() != Symbol.EOL:
+                    raise LythSyntaxError(next_token.info, msg=LythError.GARBAGE_CHARACTERS)
+
+                self.indent += 1
+                while True:
+                    self.token = self.lexer()
+                    if self.token == Symbol.EOF:
+                        raise LythSyntaxError(self.token.info, msg=LythError.MISSING_EMPTY_LINE)
+
+                    if self.token == Symbol.EOL:
+                        return Node(token, *statements), None
+
+                    if self.token != Symbol.INDENT:
+                        raise LythSyntaxError(self.token.info, msg=LythError.INCONSISTENT_INDENT)
+
+                    if self.token.lexeme <= self.indent - 1:
+                        return Node(token, *statements), None
+
+                    if self.token.lexeme != self.indent:
+                        raise LythSyntaxError(self.token.info, msg=LythError.INCONSISTENT_EVENT)
+
+                    statements.append(self.assign())
+
+            #
+            # 2. Single statement let
+            #
+            self.token = next_token
             return self.expression(), token
 
+        #
+        # 3. No let detected
+        #
         self.token = token
         return self.expression(), None
+
+    def literal(self) -> Node:
+        """
+        Looking for a literal token to make it a numeral, or a name.
+
+        Literal does not expect the line to be terminated, or the source code
+        to have an end. If it is the case, then an exception saying that it was
+        unsuccessful is raised instead.
+
+        If the token is an opening parenthesis, then the corresponding node to
+        return will not be a literal, rather a new expression needs to be
+        evaluated.
+
+        If the token being parsed is not a literal of type value, then it also
+        raises an exception saying the symbol is invalid and that it should be
+        a literal instead.
+
+        The token may already have been scanned by let. In all cases the
+        current token, even if none, must be consumed, otherwise the expression
+        will evaluate with a literal token.
+        """
+        token = self.token or self.lexer()
+        self.token = None
+        if token in (Symbol.EOF, Symbol.EOL):
+            raise LythSyntaxError(token.info, msg=LythError.INCOMPLETE_LINE)
+
+        elif token == Symbol.LPAREN:
+            return self.expression(end=Symbol.RPAREN)
+
+        elif token not in (Literal.VALUE, Literal.STRING):
+            raise LythSyntaxError(token.info, msg=LythError.LITERAL_EXPECTED)
+
+        return Node(token)
 
     def multiplication(self) -> Node:
         """
@@ -232,40 +305,6 @@ class Parser:
                 break
 
         return node
-
-    def literal(self) -> Node:
-        """
-        Looking for a literal token to make it a numeral, or a name.
-
-        Literal does not expect the line to be terminated, or the source code
-        to have an end. If it is the case, then an exception saying that it was
-        unsuccessful is raised instead.
-
-        If the token is an opening parenthesis, then the corresponding node to
-        return will not be a literal, rather a new expression needs to be
-        evaluated.
-
-        If the token being parsed is not a literal of type value, then it also
-        raises an exception saying the symbol is invalid and that it should be
-        a literal instead.
-
-        The token may already have been scanned by let. In all cases the
-        current token, even if none, must be consumed, otherwise the expression
-        will evaluate with a literal token.
-        """
-        token = self.token or self.lexer()
-        self.token = None
-
-        if token in (Symbol.EOF, Symbol.EOL):
-            raise LythSyntaxError(token.info, msg=LythError.INCOMPLETE_LINE)
-
-        elif token == Symbol.LPAREN:
-            return self.expression(end=Symbol.RPAREN)
-
-        elif token not in (Literal.VALUE, Literal.STRING):
-            raise LythSyntaxError(token.info, msg=LythError.LITERAL_EXPECTED)
-
-        return Node(token)
 
     def name(self) -> Node:
         """

@@ -86,7 +86,9 @@ class Lexer:
            first the indent.
         7. If it is not a space and no token is present, then we start creating
            one.
-        8. If it is not a space and a token is present, then we continue the
+        8. If a colon is following directly another token, we stop building the
+           token, return it, and generate a colon token.
+        9. If it is not a space and a token is present, then we continue the
            construction of the current token.
 
         When the end of file is reached:
@@ -161,9 +163,18 @@ class Lexer:
                 #
                 if token is None:
                     token = Token(char, self.scanner)
+                    if token is Symbol.COLON:
+                        raise LythSyntaxError(token.info, msg=LythError.TOO_MUCH_SPACE_BEFORE)
 
                 #
-                # 8. If it is not a space and a token is present, then we
+                # 8. A colon token is following directly another token
+                #
+                elif token is not None and char == ':':
+                    yield token
+                    token = Token(char, self.scanner)
+
+                #
+                # 9. If it is not a space and a token is present, then we
                 #    append the character to the token.
                 #
                 else:

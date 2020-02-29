@@ -153,7 +153,7 @@ class Analyzer:
         Merkel tree)
         """
         # TODO: This is a bypass. I need a blockchain now.
-        return self.visit(node.value, context)
+        return (*filter(None, [self.visit(child, context) for child in node]),)
 
     def visit_mul(self, node: Node, context: Context) -> int:
         """

@@ -19,6 +19,7 @@ class LythError(Enum):
     OK = "No error - keep up the good work!"
     GARBAGE_CHARACTERS = "Garbage characters ending line"
     INCOMPLETE_LINE = "Incomplete line"
+    INCONSISTENT_INDENT = "Inconsistent indent"
     INVALID_CHARACTER = "Invalid character"
     LEFT_MEMBER_IS_EXPRESSION = "Left member of assignment should not be an expression"
     LET_ON_EXPRESSION = "Let keyword unexpected on expression"
@@ -29,6 +30,7 @@ class LythError(Enum):
     NAME_EXPECTED = "Variable name expected"
     REASSIGN_IMMUTABLE = "Reassigning an immutable variable"
     SYNTAX_ERROR = "Invalid syntax"
+    TOO_MUCH_SPACE_BEFORE = "Too much blank spaces before character"
     UNEVEN_INDENT = "Uneven indent"
     VARIABLE_REFERENCED_BEFORE_ASSIGNMENT = "Variable referenced before assignment"
 

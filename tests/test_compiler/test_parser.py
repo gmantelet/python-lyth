@@ -59,6 +59,18 @@ def test_parser_let_assign():
     assert str(assign) == "Let(ImmutableAssign(Name(a), Mul(Name(b), Num(2))))"
 
 
+def test_parser_multiple_let_assign():
+    """
+    To validate the parser iterates properly over a variable being assigned the
+    result of an expression.
+    """
+    parser = Parser(Lexer(Scanner("let:\n  a <- 1 + 2\n  b <- a * 3\n\n")))
+
+    assign = parser()
+    assert assign.name == NodeType.Let
+    assert str(assign) == "Let(MutableAssign(Name(a), Add(Num(1), Num(2))), MutableAssign(Name(b), Mul(Name(a), Num(3))))"
+
+
 def test_parser_addition():
     """
     To validate the parser returns the right AST node.

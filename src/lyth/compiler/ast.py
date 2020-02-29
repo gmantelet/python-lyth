@@ -73,6 +73,24 @@ class Node:
         self.offset = token.info.offset
         self.line = token.info.line
 
+    def __iter__(self):
+        """
+        Returning the list of children node from this instance.
+
+        This method is convenient when the number of children cannot be
+        predicted in advance. For names and nums, it is known there is only a
+        lexeme, so the value() property is enough. Binary operators come with
+        handy left and right as we do not stack members of consecutive
+        operations (e.g. 1 + 2 + 3 does not return Add(Num(1), Num(2), Num(3))
+        but rather Add(Add(Num(1), Num(2)), Num(3)).
+
+        For block statements however such as let: ..., the number of statements
+        following that let statement is unknown, and in this case only using
+        value, left and right is discouraged. Rather, iterating over the
+        children nodes makes sense.
+        """
+        return iter(self._children)
+
     @classmethod
     def noop(cls) -> Node:
         """

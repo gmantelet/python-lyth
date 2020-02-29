@@ -26,7 +26,15 @@ def main(argv=sys.argv):
 
     while count <= settings.cycle:
         try:
-            scanner = Scanner(input('>>> ') + "\n")
+            source = input('>>> ')
+            if source.rstrip() and source.rstrip()[-1] == ':':
+                while True:
+                    line = input('... ')
+                    source += '\n' + line
+                    if not line or len(line) - len(line.lstrip()) == 0:
+                        break
+
+            scanner = Scanner(source + "\n")
             parser = Parser(Lexer(scanner))
             analyzer = Analyzer(parser)
 
@@ -34,7 +42,7 @@ def main(argv=sys.argv):
             # print(interpreter.visit(cmd))
 
             ret = analyzer.visit(cmd)
-            if ret is not None:
+            if ret:
                 print(ret)
 
         except LythSyntaxError as e:
