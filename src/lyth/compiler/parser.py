@@ -212,26 +212,33 @@ class Parser:
             if next_token == Symbol.COLON:
                 statements = []
 
-                if self.lexer() != Symbol.EOL:
-                    raise LythSyntaxError(next_token.info, msg=LythError.GARBAGE_CHARACTERS)
+                eol = self.lexer()
+
+                if eol != Symbol.EOL:
+                    raise LythSyntaxError(eol.info, msg=LythError.GARBAGE_CHARACTERS)
 
                 self.indent += 1
                 while True:
-                    self.token = self.lexer()
-                    if self.token == Symbol.EOF:
-                        raise LythSyntaxError(self.token.info, msg=LythError.MISSING_EMPTY_LINE)
+                    new_token = self.token or self.lexer()
 
-                    if self.token == Symbol.EOL:
+                    if new_token == Symbol.EOL:
+                        self.token = None
+                        continue
+
+                    if new_token == Symbol.EOF:
+                        self.token = new_token
                         return Node(token, *statements), None
 
-                    if self.token != Symbol.INDENT:
-                        raise LythSyntaxError(self.token.info, msg=LythError.INCONSISTENT_INDENT)
+                    if new_token != Symbol.INDENT:
+                        raise LythSyntaxError(new_token.info, msg=LythError.INCONSISTENT_INDENT)
 
-                    if self.token.lexeme <= self.indent - 1:
+                    if new_token.lexeme <= self.indent - 1:
+                        self.indent = new_token.lexeme
+                        self.token = new_token
                         return Node(token, *statements), None
 
-                    if self.token.lexeme != self.indent:
-                        raise LythSyntaxError(self.token.info, msg=LythError.INCONSISTENT_EVENT)
+                    if new_token.lexeme != self.indent:
+                        raise LythSyntaxError(new_token.info, msg=LythError.INCONSISTENT_INDENT)
 
                     statements.append(self.assign())
 

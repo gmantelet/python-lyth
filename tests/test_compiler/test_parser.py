@@ -71,6 +71,61 @@ def test_parser_multiple_let_assign():
     assert str(assign) == "Let(MutableAssign(Name(a), Add(Num(1), Num(2))), MutableAssign(Name(b), Mul(Name(a), Num(3))))"
 
 
+def test_parser_nested_let_assign():
+    """
+    To validate the parser solves nested let.
+    """
+    parser = Parser(Lexer(Scanner("let:\n  let:\n    a <- 1 + 2\n  b <- a * 3\n\n")))
+
+    assign = parser()
+    assert assign.name == NodeType.Let
+    assert str(assign) == "Let(Let(MutableAssign(Name(a), Add(Num(1), Num(2)))), MutableAssign(Name(b), Mul(Name(a), Num(3))))"
+
+    parser = Parser(Lexer(Scanner("let:\n  let:\n    a <- 1 + 2\n\n  b <- a * 3\n\n")))
+
+    assign = parser()
+    assert assign.name == NodeType.Let
+    assert str(assign) == "Let(Let(MutableAssign(Name(a), Add(Num(1), Num(2)))), MutableAssign(Name(b), Mul(Name(a), Num(3))))"
+
+
+def test_parser_invalid_let():
+    """
+    To validate the parser checks let block statement integrity
+    """
+    parser = Parser(Lexer(Scanner("let: a <- 1 + 2\n    b <- a * 3\n\n")))
+
+    with pytest.raises(LythSyntaxError) as err:
+        next(parser)
+
+    assert err.value.msg is LythError.GARBAGE_CHARACTERS
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 0
+    assert err.value.offset == 5
+    assert err.value.line == "let: a <- 1 + 2"
+
+    parser = Parser(Lexer(Scanner("let:\na <- 1 + 2\n  b <- a * 3\n\n")))
+
+    with pytest.raises(LythSyntaxError) as err:
+        next(parser)
+
+    assert err.value.msg is LythError.INCONSISTENT_INDENT
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 1
+    assert err.value.offset == 0
+    assert err.value.line == "a <- 1 + 2"
+
+    parser = Parser(Lexer(Scanner("let:\n  a <- 1 + 2\n    b <- a * 3\n\n")))
+
+    with pytest.raises(LythSyntaxError) as err:
+        next(parser)
+
+    assert err.value.msg is LythError.INCONSISTENT_INDENT
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 2
+    assert err.value.offset == 0
+    assert err.value.line == "    b <- a * 3"
+
+
 def test_parser_addition():
     """
     To validate the parser returns the right AST node.

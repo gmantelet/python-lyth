@@ -99,3 +99,26 @@ def test_lyth_syntax_error(inputs, returns):
             assert main(["test.py", "-c", "cycle=2"]) == returns
             result = sys.stdout.getvalue()
             assert error in result
+
+
+index = -1
+
+
+def send_let(x):
+    global index
+
+    lines = ["let:", "  a <- 1 + 2", "  b <- a * 3", "", "a"]
+    index += 1
+    if index < len(lines):
+        return lines[index]
+    return ""
+
+
+def test_lyth_ellipsis():
+    """
+    Start the main function, activates the console and hopes that let statement
+    does not lead to an exception.
+    """
+    with unittest.mock.patch.object(builtins, 'input', send_let):
+        with unittest.mock.patch('sys.stdout', new_callable=StringIO):
+            assert main(["test.py", "-c", "cycle=2"]) == 0

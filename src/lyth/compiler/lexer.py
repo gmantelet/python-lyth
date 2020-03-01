@@ -163,7 +163,7 @@ class Lexer:
                 #
                 if token is None:
                     token = Token(char, self.scanner)
-                    if token is Symbol.COLON:
+                    if token == Symbol.COLON:
                         raise LythSyntaxError(token.info, msg=LythError.TOO_MUCH_SPACE_BEFORE)
 
                 #

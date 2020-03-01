@@ -4,6 +4,7 @@ from lyth.compiler.error import LythError
 from lyth.compiler.error import LythSyntaxError
 from lyth.compiler.lexer import Lexer
 from lyth.compiler.scanner import Scanner
+from lyth.compiler.token import Keyword
 from lyth.compiler.token import Literal
 from lyth.compiler.token import Symbol
 
@@ -259,3 +260,47 @@ def test_indent():
     assert err.value.lineno == 0
     assert err.value.offset == 0
     assert err.value.line == "   1 + 2"
+
+
+def test_too_much_spaces():
+    """
+    Colon symbol is not allowed to have a space before. Spaces after are, for
+    now, tolerated.
+    """
+    lexer = Lexer(Scanner("let :\n"))
+
+    with pytest.raises(LythSyntaxError) as err:
+        for i, _ in enumerate(lexer):
+            pass
+
+    assert err.value.msg is LythError.TOO_MUCH_SPACE_BEFORE
+    assert err.value.filename == "<stdin>"
+    assert err.value.lineno == 0
+    assert err.value.offset == 4
+    assert err.value.line == "let :"
+
+    lexer = Lexer(Scanner("let:    \n"))
+
+    token = next(lexer)
+    assert token.info.offset == 0
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == 'let'
+    assert token.info.lineno == 0
+    assert token.symbol == Keyword.LET
+    assert token.info.line == "let:    "
+
+    token = next(lexer)
+    assert token.info.offset == 3
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == ':'
+    assert token.info.lineno == 0
+    assert token.symbol == Symbol.COLON
+    assert token.info.line == "let:    "
+
+    token = next(lexer)
+    assert token.info.offset == 7
+    assert token.info.filename == "<stdin>"
+    assert token.lexeme == '\n'
+    assert token.info.lineno == 0
+    assert token.symbol == Symbol.EOL
+    assert token.info.line == "let:    "
