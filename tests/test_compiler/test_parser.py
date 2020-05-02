@@ -126,6 +126,34 @@ def test_parser_invalid_let():
     assert err.value.line == "    b <- a * 3"
 
 
+def test_parser_let_be():
+    """
+    To validate the parser iterates properly over a variable being assigned the
+    result of an expression.
+    """
+    parser = Parser(Lexer(Scanner("let b:\n")))
+
+    assign = parser()
+    assert assign.name == NodeType.Let
+    assert str(assign) == "Let(Class(Name(b), None))"
+
+    parser = Parser(Lexer(Scanner("let bit be attribute:\n")))
+
+    assign = parser()
+    assert assign.name == NodeType.Let
+    assert str(assign) == "Let(Class(Name(bit), Type(Name(attribute))))"
+
+
+def test_parser_docstring():
+    """
+    To validate that the docstring of a class, or a function is not captured in
+    this version of the tool, and considered as multiline comment.
+    """
+    parser = Parser(Lexer(Scanner('"""\nHello you\n"""\n')))
+    test = parser()
+    assert test.name == NodeType.Noop
+
+
 def test_parser_addition():
     """
     To validate the parser returns the right AST node.

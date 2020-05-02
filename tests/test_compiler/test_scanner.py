@@ -138,3 +138,36 @@ def test_tabulation():
             assert f"{scan!s}" == f"in line 0 column {3}"
             assert f"{scan!r}" == f"in line 0 column {3}:\n\t\"let  :\"\n\t{' ' * 4}^"
             assert scan.line == 'let  :'
+
+
+def test_scanner_respawn():
+    """
+    A scanner that hit an EOF can actually be "respawned" by feeding it with
+    more lines
+    """
+    scan = Scanner("a\n")
+
+    char = scan()
+    assert char == "a"
+    assert scan.lineno == 0
+    assert scan.offset == 0
+    assert f"{scan!s}" == f"in line 0 column 0"
+    assert f"{scan!r}" == f"in line 0 column 0:\n\t\"a\"\n\t ^"
+    assert scan.line == 'a'
+
+    char = scan()
+    assert char == '\n'
+    assert scan.lineno == 0
+
+    with pytest.raises(StopIteration):
+        next(scan)
+
+    scan += "b"
+
+    char = scan()
+    assert char == "b"
+    assert scan.lineno == 1
+    assert scan.offset == 0
+    assert f"{scan!s}" == f"in line 1 column 0"
+    assert f"{scan!r}" == f"in line 1 column 0:\n\t\"b\"\n\t ^"
+    assert scan.line == 'b'

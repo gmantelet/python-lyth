@@ -1,4 +1,5 @@
 import enum
+from pathlib import Path
 
 import pytest
 
@@ -49,3 +50,27 @@ def test_interpreter():
 
     cmd = next(Parser(Lexer(Scanner("a\n"))))
     assert interpreter.visit(cmd) == 'a'
+
+
+def test_interpreter_whole_file():
+    """
+    The interpreter should survive a basic set of lyth commands.
+
+    Next, we'll see if bytecode can be properly produced... ;)
+    """
+    path = Path(__file__).resolve().parent / 'resources/stm32f4_gpiob.lyth'
+
+    f = open(path)
+    try:
+        interpreter = Interpreter()
+        parser = Parser(Lexer(Scanner(f.read(), filename="stm32f4_gpiob.lyth")))
+
+        while True:
+            cmd = next(parser)
+            assert interpreter.visit(cmd) is None
+
+    except Exception:
+        raise
+
+    finally:
+        f.close()

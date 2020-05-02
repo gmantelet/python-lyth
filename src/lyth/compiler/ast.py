@@ -21,6 +21,8 @@ class NodeType(Enum):
     visit.
     """
     Add = Symbol.ADD
+    Class = "class"  # Special Node for which there is no keyword.
+    Doc = Symbol.DOC
     Div = Symbol.DIV
     ImmutableAssign = Symbol.RASSIGN
     Let = Keyword.LET
@@ -30,6 +32,7 @@ class NodeType(Enum):
     Noop = None
     Num = Literal.VALUE
     Sub = Symbol.SUB
+    Type = "type"
 
     @classmethod
     def as_value(cls, symbol: Optional[str]) -> NodeType:
@@ -92,6 +95,18 @@ class Node:
         return iter(self._children)
 
     @classmethod
+    def classdef(cls, name: Node, base: Node, *nodes) -> Node:
+        """
+        A class definition.
+
+        As Lyth does not have the "class" keyword, the class is defined when
+        the following pattern is detected: 'let $NAME:'.
+        """
+        info = SimpleNamespace(filename=name.filename, lineno=name.lineno, offset=name.offset, line=name.line)
+        ns = SimpleNamespace(symbol="class", lexeme='', info=info)
+        return cls(ns, name, base, *nodes)
+
+    @classmethod
     def noop(cls) -> Node:
         """
         A no operation AST node.
@@ -102,6 +117,18 @@ class Node:
         info = SimpleNamespace(filename='noop', lineno=-1, offset=-1, line='')
         ns = SimpleNamespace(symbol=None, lexeme='', info=info)
         return cls(ns)
+
+    @classmethod
+    def typedef(cls, name: Node) -> Node:
+        """
+        A type definition.
+
+        The 'be' keyword makes the next node a name pointing to a class this
+        class definition inherits from.
+        """
+        info = SimpleNamespace(filename=name.filename, lineno=name.lineno, offset=name.offset, line=name.line)
+        ns = SimpleNamespace(symbol="type", lexeme='', info=info)
+        return cls(ns, name)
 
     def __repr__(self) -> str:
         """

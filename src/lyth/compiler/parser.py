@@ -8,6 +8,7 @@ the end.
 from __future__ import annotations
 
 from typing import Generator
+from typing import List
 from typing import Optional
 from typing import Tuple
 
@@ -48,6 +49,7 @@ class Parser:
         block is reached, it returns the node.
         """
         return next(self._stream)
+
 
     def __iter__(self) -> Lexer:
         """
@@ -158,10 +160,85 @@ class Parser:
             if next(self.lexer) != Symbol.EOL:
                 raise LythSyntaxError(node.info, msg=LythError.GARBAGE_CHARACTERS)
 
-        elif let:
+        elif let and node.name != NodeType.Class:
             raise LythSyntaxError(let.info, msg=LythError.LET_ON_EXPRESSION)
 
         return Node(let, node) if let is not None else node
+
+    def block(self) -> List[Node]:
+        """
+        Processing a list of indented statements following a colon.
+
+        Original token is provided as parameter to help this method wraps the
+        node around the token, fill its statement attribute and return it. For
+        this, the block method requires the node constructor, and the token.
+        """
+        statements = []
+        self.indent += 1
+
+        while True:
+            new_token = self.token or self.lexer()
+
+            if new_token == Symbol.EOL:
+                self.token = None
+                continue
+
+            if new_token == Symbol.EOF:
+                self.token = new_token
+                return statements
+
+            if new_token != Symbol.INDENT:
+                raise LythSyntaxError(new_token.info, msg=LythError.INCONSISTENT_INDENT)
+
+            if new_token.lexeme <= self.indent - 1:
+                self.indent = new_token.lexeme
+                self.token = new_token
+                return statements
+
+            if new_token.lexeme != self.indent:
+                raise LythSyntaxError(new_token.info, msg=LythError.INCONSISTENT_INDENT)
+
+            statements.append(self.assign())
+
+
+    def classdef(self, name: Node, end: Symbol = Symbol.EOL) -> Node:
+        """
+        Looking for a class definition.
+
+        Causes to fetch the block and append to the class node that is built
+        subsequent lines of codes until the next dedent.
+        """
+        token = self.token or next(self.lexer)
+
+        if token == Keyword.BE:
+            self.token = next(self.lexer)
+            type_node = Node.typedef(self.name())
+            token = next(self.lexer)
+
+        else:
+            # node = Node.classdef(name)
+            type_node = None
+
+        if token != Symbol.COLON:
+            raise LythSyntaxError(node_type.info, msg=LythError.GARBAGE_CHARACTERS)
+
+        self.token = None
+        try:
+            node = Node.classdef(name, type_node, *self.block())
+
+        except StopIteration:
+            raise
+
+        return node
+
+    def docstring(self) -> None:
+        """
+        This version does not do anything with docstrings.
+        """
+        token = self.lexer()
+
+        while token != Symbol.DOC:
+            token = self.lexer()
 
     def expression(self, end: Symbol = Symbol.EOL) -> Node:
         """
@@ -187,7 +264,12 @@ class Parser:
         if self.token in (Symbol.LASSIGN, Symbol.RASSIGN):
             return node
 
+        elif node.name == NodeType.Name and self.token in (Symbol.COLON, Keyword.BE):
+            return self.classdef(node)
+
         elif self.token is not None and self.token.symbol is not end:
+            print(node)
+            print(self.token)
             raise LythSyntaxError(node.info, msg=LythError.GARBAGE_CHARACTERS)
 
         self.token = None
@@ -210,37 +292,12 @@ class Parser:
             # 1. Multiple statements let
             #
             if next_token == Symbol.COLON:
-                statements = []
-
                 eol = self.lexer()
 
                 if eol != Symbol.EOL:
                     raise LythSyntaxError(eol.info, msg=LythError.GARBAGE_CHARACTERS)
 
-                self.indent += 1
-                while True:
-                    new_token = self.token or self.lexer()
-
-                    if new_token == Symbol.EOL:
-                        self.token = None
-                        continue
-
-                    if new_token == Symbol.EOF:
-                        self.token = new_token
-                        return Node(token, *statements), None
-
-                    if new_token != Symbol.INDENT:
-                        raise LythSyntaxError(new_token.info, msg=LythError.INCONSISTENT_INDENT)
-
-                    if new_token.lexeme <= self.indent - 1:
-                        self.indent = new_token.lexeme
-                        self.token = new_token
-                        return Node(token, *statements), None
-
-                    if new_token.lexeme != self.indent:
-                        raise LythSyntaxError(new_token.info, msg=LythError.INCONSISTENT_INDENT)
-
-                    statements.append(self.assign())
+                return Node(token, *self.block()), None
 
             #
             # 2. Single statement let
@@ -281,6 +338,10 @@ class Parser:
 
         elif token == Symbol.LPAREN:
             return self.expression(end=Symbol.RPAREN)
+
+        elif token == Symbol.DOC:
+            self.docstring()
+            return self.literal()
 
         elif token not in (Literal.VALUE, Literal.STRING):
             raise LythSyntaxError(token.info, msg=LythError.LITERAL_EXPECTED)

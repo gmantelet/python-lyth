@@ -21,6 +21,26 @@ class Interpreter:
         """
         return self.visit(node.left) + self.visit(node.right)
 
+    def visit_class(self, node: Node) -> None:
+        """
+        A new class definition to analyze.
+
+        The interpreter, in this case, tries to resolve the signature of this
+        node.
+        """
+        pass
+
+    def visit_let(self, node: Node) -> Node:
+        """
+        A node claiming to the world that it is bearing some meaning, and that
+        it carries runtime functionality.
+
+        In this case, the interpreter visits the let node, but does not return
+        anything: let is followed by a statement, not an expression.
+        """
+        for child in node:
+            self.visit(child)
+
     def visit_mul(self, node: Node) -> int:
         """
         A node asking for a multiplication requires a result
@@ -50,6 +70,12 @@ class Interpreter:
         A node asking for a substraction requires a result
         """
         return self.visit(node.left) - self.visit(node.right)
+
+    def visit_type(self, node: Node) -> None:
+        """
+        This node declares inheritance.
+        """
+        pass
 
     def visit(self, node: Node) -> Any:
         """

@@ -18,7 +18,7 @@ class Scanner:
     such as keeping track of lines for debug purposes in case an exception is
     raised.
     """
-    def __init__(self, data: str, filename: str = "<stdin>") -> None:
+    def __init__(self, data: str, filename: str = "<stdin>", lineno: int = 0) -> None:
         """
         Instantiate the scanner.
 
@@ -29,16 +29,24 @@ class Scanner:
         self.data: str = data
         self.filename: str = filename
         self.index: int = 0
-        self.lineno: int = 0
+        self.lineno: int = lineno
         self.offset: int = -1
         self._stream: Generator[str, None, None] = self.next()
 
     def __add__(self, other: str) -> Scanner:
         """
         Append new string to the source being scanned.
+
+        If the underlying generator is not depleted, return this instance, but
+        with the data augmented. Otherwise, return a new instance of a scanner
+        with an updated line number.
         """
-        self.data += other
-        return self
+        if self.data:
+            self.data += other
+            return self
+
+        obj = self.__class__(other, self.filename, self.lineno)
+        return obj
 
     def __call__(self) -> str:
         """

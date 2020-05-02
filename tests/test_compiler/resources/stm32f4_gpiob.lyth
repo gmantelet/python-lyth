@@ -1,0 +1,71 @@
+
+let bit be attribute:
+  """
+  Defines a bit as a field.
+
+  A bit is defined as an index. Expected type is either an integer, or a range.
+  If a range is used, then the length of the index.
+  """
+  __init__(index, set <- 1):
+    """
+    Initializes a new bit attribute of a parent instance.
+    """
+    select type(index):
+      if integer:
+        1 -> .size
+
+      if range:
+        index.range -> .size
+
+      _:
+        raise TypeError("bit expects integer or range")
+
+    index -> .index
+    set   -> .set
+
+  __get__():
+    <- (.. >> .index) & ones(.size)
+
+  __set__():
+    .. &<- ~(ones(.size) << .index)
+    .. |<- .set << .index
+
+
+
+let GPIO be array:
+  """
+  GPIO Port is an array of GPIO Pins.
+
+  GPIO port acts as a wrapper to access a specific pin.
+  """
+  __init__(identifier):
+    """
+    Initializes a GPIO Port. This does not mean that the code will be compiled
+    in the end.
+    """
+    .high       <- 1
+    .identifier <- identifier
+    .mode       <- b(.__item__) at .0 sets .enable
+
+  let enable():
+    ..AHB1ENR |= .high << .identifier
+
+
+let STM32F439:
+  """
+  High-performance advanced line, ARM Cortex-M4 core with DSP and FPU, 2 Mbytes
+  Flash, 180 MHz CPU, ART Accelerator, Chrom-ART Accelerator, FMC with SDRAM,
+  TFT, HW crypto.
+  """
+  AHB1ENR <- u32     at 0x40023830
+  GPIOB   <- GPIO(2) at 0x40020400
+
+
+let my_application():
+  """
+  My application and a convenient entry point.
+  """
+  cpu = STM32F439()
+
+  cpu.GPIOB[14]:
+    .mode <- GPIO_OUTPUT  # Will cause GPIOPort to be enabled.

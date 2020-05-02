@@ -13,6 +13,7 @@ from typing import Generator
 from lyth.compiler.error import LythError
 from lyth.compiler.error import LythSyntaxError
 from lyth.compiler.scanner import Scanner
+from lyth.compiler.token import Literal
 from lyth.compiler.token import Symbol
 from lyth.compiler.token import Token
 
@@ -90,6 +91,8 @@ class Lexer:
            token, return it, and generate a colon token.
         9. If it is not a space and a token is present, then we continue the
            construction of the current token.
+        10. One quote leads to a quote token, two quotes lead to two quote
+            tokens, three quotes lead to a doc token.
 
         When the end of file is reached:
         1. If the scanner reached the end of its source, and the last token is
@@ -107,6 +110,7 @@ class Lexer:
            one.
         """
         token = None
+        in_doc = False
 
         while True:
             try:
@@ -132,7 +136,7 @@ class Lexer:
                     #    inserts a new EOL token.
                     #
                     if char == '\n':
-                        yield Token('\n', self.scanner)
+                        yield Token('\n', self.scanner, in_doc)
 
                     token = None
 
@@ -141,7 +145,7 @@ class Lexer:
                     #    beginning of an indent.
                     #
                     if self.scanner.offset == 0:
-                        token = Token(' ', self.scanner)
+                        token = Token(' ', self.scanner, in_doc)
                         continue
 
                     #
@@ -162,7 +166,7 @@ class Lexer:
                 #    start defining a new token
                 #
                 if token is None:
-                    token = Token(char, self.scanner)
+                    token = Token(char, self.scanner, in_doc)
                     if token == Symbol.COLON:
                         raise LythSyntaxError(token.info, msg=LythError.TOO_MUCH_SPACE_BEFORE)
 
@@ -171,32 +175,40 @@ class Lexer:
                 #
                 elif token is not None and char == ':':
                     yield token
-                    token = Token(char, self.scanner)
+                    token = Token(char, self.scanner, in_doc)
 
                 #
                 # 9. If it is not a space and a token is present, then we
-                #    append the character to the token.
+                #     append the character to the token.
                 #
                 else:
                     token += char
+
+                    # 10. One quote leads to a quote token, two quotes lead to two quote
+                    #    tokens, three quotes lead to a doc token.
+                    if token == Symbol.QUOTE and token.quotes == 3:
+                        yield Token('"""', self.scanner, in_doc)()
+                        in_doc = not in_doc
+                        token = None
 
             except StopIteration:
                 if token is not None and (token.symbol is not Symbol.EOL or token.lineno != 0):
                     raise LythSyntaxError(token.info, msg=LythError.MISSING_EMPTY_LINE) from None
 
-                yield Token(None, self.scanner)
+                yield Token(None, self.scanner, in_doc)
                 break
 
             except LythSyntaxError as error:
                 if error.msg is LythError.MISSING_SPACE_AFTER_OPERATOR:
                     if token is not None and token.symbol in (Symbol.ADD, Symbol.SUB, Symbol.LPAREN):
                         yield token()
-                        token = Token(char, self.scanner)
+                        token = Token(char, self.scanner, in_doc)
                         continue
 
                 elif error.msg is LythError.MISSING_SPACE_BEFORE_OPERATOR:
-                    new_token = Token(char, self.scanner)
-                    if new_token.symbol is Symbol.RPAREN:
+                    new_token = Token(char, self.scanner, in_doc)
+                    if new_token.symbol is Symbol.RPAREN \
+                       or token.symbol is Literal.STRING and new_token.symbol is Symbol.LPAREN:
                         yield token()
                         token = new_token
                         continue

@@ -79,6 +79,7 @@ class Keyword(_Lexeme):
     Use of keywords for naming variables will raise an Exception.
     """
     AT = 'at'                  # To refer to an address, and not a value
+    BE = 'be'                  # The class inherits from a parent.
     AND = 'and'                # A logical and operator
     FALSE = 'false'            # False value, often equals 0
     FOR = 'for'                # The for loop
@@ -128,7 +129,7 @@ class Token:
     processing may be required, for instance converting the string lexeme into
     an int etc.
     """
-    def __init__(self, lexeme: str, scan: Scanner) -> None:
+    def __init__(self, lexeme: str, scan: Scanner, force_literal=False) -> None:
         """
         Instantiate a new Token.
 
@@ -154,8 +155,10 @@ class Token:
         else:
             raise LythSyntaxError(scan, msg=LythError.INVALID_CHARACTER)
 
+        self.literal = force_literal
         self.info = TokenInfo(scan.filename, scan.lineno, scan.offset, scan.line)
         self.lexeme = lexeme
+        self.quotes = 1 if self.symbol is Symbol.QUOTE else 0
 
     def __call__(self) -> Token:
         """
@@ -208,7 +211,20 @@ class Token:
         7. Appending an alphanumerical character, or '_', leading to a literal
            right after a symbol, without the presence of a space leads to an
            error. Exception, such as '-5' will be corrected by the lexer.
+        8. Appending a quote to a quote leaves the method unchanged and the
+           same quote symbol is returned. It is up to the lexer to count the
+           number of quotes in order to build a docstring.
         """
+        if self.literal:
+            if lexeme == '"':
+                self.symbol = Symbol.QUOTE
+                self.quotes += 1
+
+            else:
+                self.symbol = Literal.STRING
+                self.lexeme += lexeme
+            return self
+
         if self.symbol is Symbol.INDENT and lexeme == ' ':
             self.lexeme += lexeme
             return self
@@ -241,6 +257,10 @@ class Token:
 
         elif (lexeme.isalnum() or lexeme == '_') and self.symbol in Symbol:
             raise LythSyntaxError(self.info, msg=LythError.MISSING_SPACE_AFTER_OPERATOR)
+
+        elif (lexeme ==  '"' and self.symbol is Symbol.QUOTE):
+            self.quotes += 1
+            return self
 
         else:
             raise LythSyntaxError(self.info, msg=LythError.SYNTAX_ERROR)
